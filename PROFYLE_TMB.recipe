@@ -152,7 +152,6 @@ Include: yum
     All steps will use 48 threads 
     Currently only works for hg19 genome bams without the 'chr' prefix.
 
-
 %environment
     export PATH=/usr/TMB:$PATH
     #export LC_ALL=C
