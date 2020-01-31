@@ -1,0 +1,135 @@
+BootStrap: yum
+OSVersion: 7
+MirrorURL: http://mirror.centos.org/centos-%{OSVERSION}/%{OSVERSION}/os/x86_64/
+Include: yum
+
+%runscript
+    #echo "This is what happens when you run the container..."
+
+    #estimate the TMB using:
+    # 1. Manta for SV calls and Strelka upstream indel calls
+    # 2. Strelka2
+    # 3. Annotate with SNPEff and collect counts with SnpSift
+    # 4. Execute msiSensor for MSI TMB as well
+    #
+    # The parameters supplied in order are:
+    #    Tumour Bam file (sorted and duplicate marked)
+    #    Normal Bam file (sorted and duplicate marked)
+    #    Reference fasta file (indexed to have .fai file present)
+
+    # Setup variables for filenames
+    tumour_bam=${1}
+    normal_bam=${2}
+    ref=${3}
+    tumour_name=`basename ${1}`
+    normal_name=`basename ${2}`
+    ref_name=`basename ${3}`
+    
+    #results folder
+    results_folder="counts_"${tumour_name}_${normal_name}_${ref_name} 
+    mkdir -p ${results_folder}
+ 
+    #get reference base counts
+    echo "checking the reference bases to use for calculations..."
+    count_file=${results_folder}/genome_ACTG_count.txt
+    if test ! -f ${count_file}; then
+        /usr/TMB/seqtk-1.3/seqtk comp ${ref} | grep ^[123456789XY] | awk '{ print $3+$4+$5+$6 }' | paste -sd+ | bc > ${count_file}
+    fi
+
+    #Run Manta
+    manta_folder=manta_${tumour_name}_${normal_name}_${ref_name}
+    /usr/TMB/manta-1.6.0.centos6_x86_64/bin/configManta.py --normalBam=${normal_bam} --tumorBam=${tumour_bam} --referenceFasta=${ref} --runDir $manta_folder
+    ${manta_folder}/runWorkflow.py -m local -j 48
+
+    #Run Strelka
+    strelka_folder=strelka_${tumour_name}_${normal_name}_${ref_name}
+    /usr/TMB/strelka-2.9.2.centos6_x86_64/bin//configureStrelkaSomaticWorkflow.py --normalBam ${normal_bam}  --tumorBam ${tumour_bam} --referenceFasta ${ref}   --runDir ${strelka_folder}  --indelCandidates ${manta_folder}/results/variants/candidateSmallIndels.vcf.gz
+    ${strelka_folder}/runWorkflow.py -m local -j 48
+
+    #Filter to get just the passed variants int he counts below
+    java -Xmx2g -jar /usr/TMB/snpEff/SnpSift.jar filter "(FILTER = 'PASS')" ${manta_folder}/results/variants/somaticSV.vcf.gz > ${manta_folder}/results/variants/somaticSV.PASS.vcf    
+    java -Xmx2g -jar /usr/TMB/snpEff/SnpSift.jar filter "(FILTER = 'PASS')" ${strelka_folder}/results/variants/somatic.snvs.vcf.gz > ${strelka_folder}/results/variants/somatic.snvs.PASS.vcf    
+    java -Xmx2g -jar /usr/TMB/snpEff/SnpSift.jar filter "(FILTER = 'PASS')" ${strelka_folder}/results/variants/somatic.indels.vcf.gz > ${strelka_folder}/results/variants/somatic.indels.PASS.vcf  
+
+    #Run SnpEff (both jobs at once)
+   java -Xmx4g -jar /usr/TMB/snpEff/snpEff.jar GRCh37.75 -csvStats ${results_folder}/"snv.pass.csv" ${strelka_folder}/results/variants/somatic.snvs.PASS.vcf > ${strelka_folder}/results/variants/somatic.snvs.PASS.SnpEff.vcf &
+    java -Xmx4g -jar /usr/TMB/snpEff/snpEff.jar GRCh37.75 -csvStats ${results_folder}/"indel.pass.csv" ${strelka_folder}/results/variants/somatic.indels.PASS.vcf > ${strelka_folder}/results/variants/somatic.indels.PASS.SnpEff.vcf &
+    java -Xmx4g -jar /usr/TMB/snpEff/snpEff.jar GRCh37.75 -csvStats ${results_folder}/"sv.csv" ${strelka_folder}/results/variants/somatic.indels.PASS.vcf > ${manta_folder}/results/variants/somaticSV.PASS.vcf
+
+    #run msisensor and send the output to the counts folder
+    ./msisensor.linux msi -d microsatellites.rep1 -n ${normal_bam} -t ${tumour_bam} -o ${results_folder}/msi_out.txt -b 48
+
+    #Print Report:
+    echo "TMB Pipeline V0.1"
+    echo "Tumour BAM File: ${tumour_bam}"
+    echo "Normal BAM File: ${normal_bam}"
+    echo "Reference: ${ref}"
+    echo "Manta V1.6.0"
+    echo "Strelka 2.9.2"
+    echo "SnpEff 4.3t GRCh37.75"
+    echo "msisensor 0.2" #might want a newer version. MSIsensor2 has been released
+
+    printf "%d non-N bases in 1-22,X,Y\n", $(cat ${count_file})
+    printf "%d CDS bases in 1-22,X,Y\n", $(cat /usr/TMB/CDS_size.txt)
+
+
+%post
+    mkdir /usr/TMB
+    cd /usr/TMB
+    
+    yum -y update 
+    yum -y install wget unzip tar bzip2 java-1.8.0-openjdk
+    yum -y install zlib-devel ncurses-devel ncurses
+    yum -y install libgomp
+    yum -y install make
+    yum -y install gcc
+    yum -y install bc
+
+    #install strelka2.9.2
+    wget https://github.com/Illumina/strelka/releases/download/v2.9.2/strelka-2.9.2.centos6_x86_64.tar.bz2
+    tar xvjf strelka-2.9.2.centos6_x86_64.tar.bz2
+    #run install tests
+    # bash strelka-2.9.2.centos6_x86_64/bin/runStrelkaSomaticWorkflowDemo.bash
+    # bash strelka-2.9.2.centos6_x86_64/bin/runStrelkaGermlineWorkflowDemo.bash 
+
+    #install Manta for SV calls, and upstream Strelka calling
+    wget https://github.com/Illumina/manta/releases/download/v1.6.0/manta-1.6.0.centos6_x86_64.tar.bz2
+    tar xvjf manta-1.6.0.centos6_x86_64.tar.bz2
+
+    #run a small tests in Manta
+    # python manta-1.6.0.centos6_x86_64/bin//runMantaWorkflowDemo.py
+
+    #bedtools
+    wget https://github.com/arq5x/bedtools2/releases/download/v2.29.2/bedtools.static.binary
+    chmod 775 bedtools.static.binary
+
+    #seqtk for counting fasta bases quickly
+    wget https://github.com/lh3/seqtk/archive/v1.3.tar.gz
+    tar -xvf v1.3.tar.gz
+    cd seqtk-1.3/
+    make
+    cd /usr/TMB
+
+    #install snpEff
+    wget https://cfhcable.dl.sourceforge.net/project/snpeff/snpEff_v4_3t_core.zip
+    unzip snpEff_v4_3t_core.zip
+   
+    #Set up Ensembl 75 GRCh37 database (will take a few minutes)
+    java -jar /usr/TMB/snpEff/snpEff.jar download GRCh37.75 
+    #extract the stats for the annotations
+    java -jar /usr/TMB/snpEff/snpEff.jar dump -v -bed GRCh37.75 > GRCh37.70.bed
+    #get the size of the CDS
+    grep ^[1234567890XY] GRCh37.70.bed | grep CDS | ./bedtools.static.binary sort | ./bedtools.static.binary sort | awk '{ print $3-$2 }' | paste -sd+ | bc > CDS_size.txt
+    
+    #msisensor install - would be nice to scan the reference at setup, but it needs to match the reference supplied at runtime.
+    wget https://github.com/ding-lab/msisensor/releases/download/0.2/msisensor.linux
+    chmod 775 msisensor.linux
+    wget https://www.bcgsc.ca/downloads/rcorbett/TMB/microsatellites.rep1
+
+#%files
+    #microsatellite regions that are downsampled to speeed things up
+    #/home/rcorbett/recipes/microsatellites.rep1 /usr/TMB/
+
+%environment
+    export PATH=/usr/TMB:$PATH
+    #export LC_ALL=C
