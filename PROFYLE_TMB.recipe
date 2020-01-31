@@ -130,6 +130,29 @@ Include: yum
     #microsatellite regions that are downsampled to speeed things up
     #/home/rcorbett/recipes/microsatellites.rep1 /usr/TMB/
 
+%help
+    This contaner will accept a tumour and normal genome BAM file along with the reference fasta.    
+    SNVs will be called with Manta, Strelka2, and annotated with SnpEff to count TMB with respect 
+    to the whole genome as well as the CDS space of Ens 75.
+
+    To run this container you will need to provide the network path of your files.    If your system
+    uses symlinks for files make sure to provide the file path of the original file (available 
+    when running 'readlink -f yourfile'.
+
+    For example,
+    singularity run --bind /projects/alignment_references/Homo_sapiens/hg19a/genome/fasta/:/ref,/projects/cellLineControls/genome/COLO829/hg19/dilutions/mem/:/tumour,/projects/cellLineControls/genome/COLO829BL/:/normal PROFYLE_TMB /tumour/A36971_2_lanes_dupsFlagged.bam /normal/A36973_1_lane_dupsFlagged.bam /ref/hg19a.fa
+ 
+    The steps of analysis are:
+    1) if necessary, count the non-N bases of the provided reference on the 1-22,X,Y chromosomes
+    2) Call SVs with Manta
+    3) Call SNVs and Indels with Strelka 2
+    4) Annotate with snpEff
+    5  Calculate MSI with msisensor
+
+    All steps will use 48 threads 
+    Currently only works for hg19 genome bams without the 'chr' prefix.
+
+
 %environment
     export PATH=/usr/TMB:$PATH
     #export LC_ALL=C
