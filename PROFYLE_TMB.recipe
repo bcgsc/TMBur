@@ -16,6 +16,7 @@ Include: yum
     #    Tumour Bam file (sorted and duplicate marked)
     #    Normal Bam file (sorted and duplicate marked)
     #    Reference fasta file (indexed to have .fai file present)
+    #    Output path
 
     # Setup variables for filenames
     tumour_bam=${1}
@@ -24,9 +25,20 @@ Include: yum
     tumour_name=`basename ${1}`
     normal_name=`basename ${2}`
     ref_name=`basename ${3}`
+    out_base=${4}
+   
+    echo "TMB Pipeline V0.1"
+    echo "Tumour BAM File: ${tumour_bam}"
+    echo "Normal BAM File: ${normal_bam}"
+    echo "Reference: ${ref}"
+    echo "Manta V1.6.0"
+    echo "Strelka 2.9.2"
+    echo "SnpEff 4.3t GRCh37.75"
+    echo "msisensor 0.2" #might want a newer version. MSIsensor2 has been released
+    printf "Output going to: %s\n"  ${out_base}
     
     #results folder
-    results_folder="counts_"${tumour_name}_${normal_name}_${ref_name} 
+    results_folder=${out_base}/"counts_"${tumour_name}_${normal_name}_${ref_name} 
     mkdir -p ${results_folder}
  
     #get reference base counts
@@ -37,42 +49,54 @@ Include: yum
     fi
 
     #Run Manta
-    manta_folder=manta_${tumour_name}_${normal_name}_${ref_name}
+    manta_folder=${out_base}/manta_${tumour_name}_${normal_name}_${ref_name}
     /usr/TMB/manta-1.6.0.centos6_x86_64/bin/configManta.py --normalBam=${normal_bam} --tumorBam=${tumour_bam} --referenceFasta=${ref} --runDir $manta_folder
     ${manta_folder}/runWorkflow.py -m local -j 48
 
     #Run Strelka
-    strelka_folder=strelka_${tumour_name}_${normal_name}_${ref_name}
+    strelka_folder=${out_base}/strelka_${tumour_name}_${normal_name}_${ref_name}
     /usr/TMB/strelka-2.9.2.centos6_x86_64/bin//configureStrelkaSomaticWorkflow.py --normalBam ${normal_bam}  --tumorBam ${tumour_bam} --referenceFasta ${ref}   --runDir ${strelka_folder}  --indelCandidates ${manta_folder}/results/variants/candidateSmallIndels.vcf.gz
     ${strelka_folder}/runWorkflow.py -m local -j 48
 
     #Filter to get just the passed variants int he counts below
-    java -Xmx2g -jar /usr/TMB/snpEff/SnpSift.jar filter "(FILTER = 'PASS')" ${manta_folder}/results/variants/somaticSV.vcf.gz > ${manta_folder}/results/variants/somaticSV.PASS.vcf    
+    java -Xmx2g -jar /usr/TMB/snpEff/SnpSift.jar filter "(FILTER = 'PASS')" ${manta_folder}/results/variants/somaticSV.vcf.gz > ${manta_folder}/results/variants/somatic.SV.PASS.vcf    
     java -Xmx2g -jar /usr/TMB/snpEff/SnpSift.jar filter "(FILTER = 'PASS')" ${strelka_folder}/results/variants/somatic.snvs.vcf.gz > ${strelka_folder}/results/variants/somatic.snvs.PASS.vcf    
     java -Xmx2g -jar /usr/TMB/snpEff/SnpSift.jar filter "(FILTER = 'PASS')" ${strelka_folder}/results/variants/somatic.indels.vcf.gz > ${strelka_folder}/results/variants/somatic.indels.PASS.vcf  
 
     #Run SnpEff (both jobs at once)
-   java -Xmx4g -jar /usr/TMB/snpEff/snpEff.jar GRCh37.75 -csvStats ${results_folder}/"snv.pass.csv" ${strelka_folder}/results/variants/somatic.snvs.PASS.vcf > ${strelka_folder}/results/variants/somatic.snvs.PASS.SnpEff.vcf &
-    java -Xmx4g -jar /usr/TMB/snpEff/snpEff.jar GRCh37.75 -csvStats ${results_folder}/"indel.pass.csv" ${strelka_folder}/results/variants/somatic.indels.PASS.vcf > ${strelka_folder}/results/variants/somatic.indels.PASS.SnpEff.vcf &
-    java -Xmx4g -jar /usr/TMB/snpEff/snpEff.jar GRCh37.75 -csvStats ${results_folder}/"sv.csv" ${strelka_folder}/results/variants/somatic.indels.PASS.vcf > ${manta_folder}/results/variants/somaticSV.PASS.vcf
+    java -Xmx4g -jar /usr/TMB/snpEff/snpEff.jar GRCh37.75 ${strelka_folder}/results/variants/somatic.snvs.PASS.vcf > ${results_folder}/somatic.snvs.PASS.SnpEff.vcf &
+    java -Xmx4g -jar /usr/TMB/snpEff/snpEff.jar GRCh37.75 ${strelka_folder}/results/variants/somatic.indels.PASS.vcf > ${results_folder}/somatic.indels.PASS.SnpEff.vcf &
+    java -Xmx4g -jar /usr/TMB/snpEff/snpEff.jar GRCh37.75 ${manta_folder}/results/variants/somatic.SV.PASS.vcf > ${results_folder}/somatic.SV.PASS.SnpEff.vcf
 
     #run msisensor and send the output to the counts folder
-    ./msisensor.linux msi -d microsatellites.rep1 -n ${normal_bam} -t ${tumour_bam} -o ${results_folder}/msi_out.txt -b 48
+    /usr/TMB/msisensor.linux msi -d /usr/TMB/microsatellites.rep1 -n ${normal_bam} -t ${tumour_bam} -o ${results_folder}/msi_out.txt -b 48 > ${results_folder}/msi_stdout.txt 2> ${results_folder}/msi_stderr.txt
 
     #Print Report:
-    echo "TMB Pipeline V0.1"
-    echo "Tumour BAM File: ${tumour_bam}"
-    echo "Normal BAM File: ${normal_bam}"
-    echo "Reference: ${ref}"
-    echo "Manta V1.6.0"
-    echo "Strelka 2.9.2"
-    echo "SnpEff 4.3t GRCh37.75"
-    echo "msisensor 0.2" #might want a newer version. MSIsensor2 has been released
+    total_bases=$(cat ${count_file})
+    CDS_bases=$(cat /usr/TMB/CDS_size.txt)
+    total_SNVs=$(cat ${results_folder}/somatic.snvs.PASS.SnpEff.vcf | grep -v ^# | wc -l)
+    total_Indels=$(cat ${results_folder}//somatic.indels.PASS.SnpEff.vcf | grep -v ^# | wc -l)
+    coding_SNVs=$(java -Xmx4g -jar /usr/TMB/snpEff/SnpSift.jar filter "(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" ${results_folder}/somatic.snvs.PASS.SnpEff.vcf | wc -l)
+    coding_Indels=$(java -Xmx4g -jar /usr/TMB/snpEff/SnpSift.jar filter "(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" ${results_folder}/somatic.indels.PASS.SnpEff.vcf | wc -l)
+    MSI_score=$(awk 'NR==2{ print $NF }' ${results_folder}/msi_out.txt)
 
-    printf "%d non-N bases in 1-22,X,Y\n", $(cat ${count_file})
-    printf "%d CDS bases in 1-22,X,Y\n", $(cat /usr/TMB/CDS_size.txt)
+    printf "Non-N bases in 1-22,X,Y: %d\n" ${total_bases}
+    printf "CDS bases in 1-22,X,Y: %d\n" ${CDS_bases}
+    printf "Total genome SNVs: %d\n" ${total_SNVs}
+    printf "Total genome Indels: %d\n" ${total_Indels}
+    printf "Coding SNVs: %d\n" ${coding_SNVs}
+    printf "Coding Indels: %d\n" ${coding_Indels}
 
+    #1000000's are there so we report mutations/Mb
+    printf "Genome SNV TMB: %3.2f\n" `echo "scale=8; ${total_SNVs} *1000000 / ${total_bases}" | bc`
+    printf "Genome Indel TMB: %3.2f\n" `echo "scale=8; ${total_Indels} *1000000 / ${total_bases}" | bc`
+    printf "Coding SNV TMB: %3.2f\n" `echo "scale=8; ${coding_SNVs} * 1000000 / ${CDS_bases}" | bc`
+    printf "Coding Indel TMB: %3.2f\n" `echo "scale=8; ${coding_Indels} * 1000000 / ${CDS_bases}" | bc`
+    printf "MSI score: %3.2f\n" ${MSI_score}
+    
 
+    printf "Report Complete!"
+ 
 %post
     mkdir /usr/TMB
     cd /usr/TMB
@@ -140,7 +164,7 @@ Include: yum
     when running 'readlink -f yourfile'.
 
     For example,
-    singularity run --bind /projects/alignment_references/Homo_sapiens/hg19a/genome/fasta/:/ref,/projects/cellLineControls/genome/COLO829/hg19/dilutions/mem/:/tumour,/projects/cellLineControls/genome/COLO829BL/:/normal PROFYLE_TMB /tumour/A36971_2_lanes_dupsFlagged.bam /normal/A36973_1_lane_dupsFlagged.bam /ref/hg19a.fa
+    singularity run --bind /projects/alignment_references/Homo_sapiens/hg19a/genome/fasta/:/ref,/projects/cellLineControls/genome/COLO829/hg19/dilutions/mem/:/tumour,/projects/cellLineControls/genome/COLO829BL/:/normal PROFYLE_TMB /tumour/A36971_2_lanes_dupsFlagged.bam /normal/A36973_1_lane_dupsFlagged.bam /ref/hg19a.fa /home/rcorbett/tmb_out
  
     The steps of analysis are:
     1) if necessary, count the non-N bases of the provided reference on the 1-22,X,Y chromosomes
@@ -149,7 +173,7 @@ Include: yum
     4) Annotate with snpEff
     5  Calculate MSI with msisensor
 
-    All steps will use 48 threads 
+    All steps will try to use 48 threads 
     Currently only works for hg19 genome bams without the 'chr' prefix.
 
 %environment
