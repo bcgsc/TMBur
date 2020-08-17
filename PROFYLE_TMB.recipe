@@ -4,182 +4,9 @@ MirrorURL: http://mirror.centos.org/centos-%{OSVERSION}/%{OSVERSION}/os/x86_64/
 Include: yum
 
 %runscript
-    usage_simple="
-        \n
-        TMB container V0.1\n
-        \n
-        Usage:  singularity run --bind /path/to/reference/:/ref,/path/to/tumour/bam/:/tumour,//path/to/normal/bam/:/normal\n
-            PROFYLE_TMB -t tumour_bam_file.bam -n normal_bam_file.bam -r /ref/yourRef.fa -o /path/to/output\n
-        \n     
-        Options:\n
-        --bind\tThe ABSOLUTE paths to your tumour bam, normal bam and reference files.\n
-        \t\t	You can find the absolute path to symlinks using 'readlink -f myFile'\n
-        -t\tThe name of the tumour Bam file\n
-        -n\tThe name of the normal Bam file\n
-        -r\tThe name of the fasta file (must be indexed)\n
-        -o\tThe output folder to use\n
-  	-h\tPrint the long help message\n
-        \n
-        For example:\n
-        singularity run --bind /projects/alignment_references/Homo_sapiens/hg19a/genome/fasta/:/ref,/projects/cellLineControls/genome/COLO829/hg19/dilutions/mem/:/tumour,/projects/cellLineControls/genome/COLO829BL/:/normal PROFYLE_TMB -t /tumour/A36971_2_lanes_dupsFlagged.bam -n /normal/A36973_1_lane_dupsFlagged.bam -r /ref/hg19a.fa -o `pwd`\n
-    "
-
-    usage_help="This container will run the following tools in order to estimate the \n
-	TMB for the provided sample:\n
-    	Manta V1.6.0\n
-	Strelka 2.9.2\n
-    	SnpEff 4.3t GRCh37.75\n
-    	msisensor 0.2\n
-        \n
- 
-    The steps of analysis are:\n
-    1) If necessary, count the non-N bases of the provided reference on the 1-22,X,Y chromosomes\n
-    2) Call SVs with Manta (recommended for Strelka 2)\n
-    3) Call SNVs and Indels with Strelka 2\n
-    4) Annotate with snpEff\n
-    5) Calculate MSI with msisensor\n
-    \n
-    All steps will try to use 48 threads\n
-    Currently only works for hg19 genome bams without the 'chr' prefix.\n
-    \n    
-    The output folder will contain a file named results.txt where the following will be reported:\n 
-    Non-N bases in 1-22,X,Y:	Count of the bases used as the whole genome calculation denominator\n
-    CDS bases in 1-22,X,Y: 	Count of the unique CDS bases used in the coding calculation denominator\n
-    Total genome SNVs: 		Number of SNVs called by Strelka 2\n
-    Total genome Indels: 	Number of Indels called by Strelka 2\n
-    Coding SNVs: 		Number of Coding SNVs called by Strelka 2\n
-    Coding Indels: 		Number of COding Indels called by Strelka 2\n
-    \n
-    Genome SNV TMB: 		total_SNVs * 1000000 / total_bases\n
-    Genome Indel TMB: 		total_Indels * 1000000 / total_bases\n
-    Coding SNV TMB: 		coding_SNVs * 1000000 / CDS_bases\n
-    Coding Indel TMB: 		coding_Indels * 1000000 / CDS_bases\n
-    MSI score: 			Fraction of sites reported as MSI by MSIsensor
-    \n
-    "
+    echo "This container holds the tools and resources required for the PROFYLE TMB work. \
+    	 It should be orchestrated using the associated nextflow scripts."
     
-    unset tumour_bam
-    while getopts ":t:n:r:o:h" opt; do
-      case ${opt} in
-        t )  #Tumour bam file
-          tumour_bam=$OPTARG
-          ;;
-        n )  #normal bam file
-          normal_bam=$OPTARG
-          ;;
-        r )  #reference file
-          ref=$OPTARG
-          ;;
-        o )  #base output folder
-          out_base=$OPTARG
-          ;;
-        h )
-          echo -e ${usage_simple}
-          echo -e ${usage_help}
-          exit 1
-          ;;
-        \? )
-          echo "Invalid option: $OPTARG" 1>&2
-          echo -e ${usage_simple}
-          exit 1
-          ;;
-        : )
-          echo "Invalid option: $OPTARG requires an argument" 1>&2
-          echo -e ${usage_simple}
-          exit 1
-          ;;
-      esac
-    done
-    shift $((OPTIND -1))
-
-    #handle the no parameters case
-    if [ -z "$tumour_bam" ]
-    then
-        echo -e ${usage_simple}
-        exit 1
-    fi    
-    
-    # Setup variables for filenames
-    tumour_name=`basename ${tumour_bam}`
-    normal_name=`basename ${normal_bam}`
-    ref_name=`basename ${ref}`
-    
-    #results folder
-    results_folder=${out_base}/"counts_"${tumour_name}_${normal_name}_${ref_name} 
-    mkdir -p ${results_folder}
-    results_file="${results_folder}/report.txt"
-    log_file="${results_folder}/log.txt"
- 
-    echo "TMB Pipeline V0.1" | tee ${log_file}
-    echo "Tumour BAM File: ${tumour_bam}" | tee -a ${log_file}
-    echo "Normal BAM File: ${normal_bam}"| tee -a ${log_file}
-    echo "Reference: ${ref}"| tee -a ${log_file}
-    echo "Manta V1.6.0"| tee -a ${log_file}
-    echo "Strelka 2.9.2"| tee -a ${log_file}
-    echo "SnpEff 4.3t GRCh37.75"| tee -a ${log_file}
-    echo "msisensor 0.2" | tee -a ${log_file}
-    printf "Output going to: %s\n"  ${out_base} | tee -a ${log_file}
-    
-    #get reference base counts
-    echo "checking the reference bases to use for calculations..." | tee -a ${log_file}
-    count_file=${results_folder}/genome_ACTG_count.txt
-    if test ! -f ${count_file}; then
-        /usr/TMB/seqtk-1.3/seqtk comp ${ref} | grep ^[123456789XY] | awk '{ print $3+$4+$5+$6 }' | paste -sd+ | bc > ${count_file}
-    fi
-
-    #Run Manta
-    echo "running manta..." | tee -a ${log_file}
-    manta_folder=${out_base}/manta_${tumour_name}_${normal_name}_${ref_name}
-    /usr/TMB/manta-1.6.0.centos6_x86_64/bin/configManta.py --normalBam=${normal_bam} --tumorBam=${tumour_bam} --referenceFasta=${ref} --runDir $manta_folder 2>> ${log_file}
-    ${manta_folder}/runWorkflow.py -m local -j 48 2>> ${log_file}
-
-    #Run Strelka
-    echo "running strelka..." | tee -a ${log_file}
-    strelka_folder=${out_base}/strelka_${tumour_name}_${normal_name}_${ref_name} 
-    /usr/TMB/strelka-2.9.2.centos6_x86_64/bin//configureStrelkaSomaticWorkflow.py --normalBam ${normal_bam}  --tumorBam ${tumour_bam} --referenceFasta ${ref}   --runDir ${strelka_folder}  --indelCandidates ${manta_folder}/results/variants/candidateSmallIndels.vcf.gz 2>> ${log_file}
-    ${strelka_folder}/runWorkflow.py -m local -j 48 2>> ${log_file}
-
-    #Filter to get just the passed variants int he counts below
-    echo "annotating variants..." | tee -a ${log_file}
-    java -Xmx2g -jar /usr/TMB/snpEff/SnpSift.jar filter "(FILTER = 'PASS')" ${manta_folder}/results/variants/somaticSV.vcf.gz > ${manta_folder}/results/variants/somatic.SV.PASS.vcf | tee -a ${log_file} 
-    java -Xmx2g -jar /usr/TMB/snpEff/SnpSift.jar filter "(FILTER = 'PASS')" ${strelka_folder}/results/variants/somatic.snvs.vcf.gz > ${strelka_folder}/results/variants/somatic.snvs.PASS.vcf | tee -a ${log_file}    
-    java -Xmx2g -jar /usr/TMB/snpEff/SnpSift.jar filter "(FILTER = 'PASS')" ${strelka_folder}/results/variants/somatic.indels.vcf.gz > ${strelka_folder}/results/variants/somatic.indels.PASS.vcf | tee -a ${log_file}  
-
-    #Run SnpEff (both jobs at once)
-    java -Xmx4g -jar /usr/TMB/snpEff/snpEff.jar GRCh37.75 ${strelka_folder}/results/variants/somatic.snvs.PASS.vcf > ${results_folder}/somatic.snvs.PASS.SnpEff.vcf | tee -a ${log_file} & 
-    java -Xmx4g -jar /usr/TMB/snpEff/snpEff.jar GRCh37.75 ${strelka_folder}/results/variants/somatic.indels.PASS.vcf > ${results_folder}/somatic.indels.PASS.SnpEff.vcf | tee -a ${log_file} &
-    java -Xmx4g -jar /usr/TMB/snpEff/snpEff.jar GRCh37.75 ${manta_folder}/results/variants/somatic.SV.PASS.vcf > ${results_folder}/somatic.SV.PASS.SnpEff.vcf | tee -a ${log_file}  
-
-    #run msisensor and send the output to the counts folder
-    echo "estimating MSI..." | tee -a ${log_file}
-    /usr/TMB/msisensor.linux msi -d /usr/TMB/microsatellites.rep1 -n ${normal_bam} -t ${tumour_bam} -o ${results_folder}/msi_out.txt -b 48 > ${results_folder}/msi_stdout.txt 2> ${results_folder}/msi_stderr.txt
-
-    #Print Report:
-    total_bases=$(cat ${count_file})
-    CDS_bases=$(cat /usr/TMB/CDS_size.txt)
-    total_SNVs=$(cat ${results_folder}/somatic.snvs.PASS.SnpEff.vcf | grep -v ^# | wc -l)
-    total_Indels=$(cat ${results_folder}//somatic.indels.PASS.SnpEff.vcf | grep -v ^# | wc -l)
-    coding_SNVs=$(java -Xmx4g -jar /usr/TMB/snpEff/SnpSift.jar filter "(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" ${results_folder}/somatic.snvs.PASS.SnpEff.vcf | wc -l)
-    coding_Indels=$(java -Xmx4g -jar /usr/TMB/snpEff/SnpSift.jar filter "(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" ${results_folder}/somatic.indels.PASS.SnpEff.vcf | wc -l)
-    MSI_score=$(awk 'NR==2{ print $NF }' ${results_folder}/msi_out.txt)
-
-    echo "TMB Pipeline V0.1" | tee ${results_file}
-    echo "Tumour BAM File: ${tumour_bam}" | tee -a ${results_file}
-    echo "Normal BAM File: ${normal_bam}"| tee -a ${results_file}
-    printf "Non-N bases in 1-22,X,Y: %d\n" ${total_bases} | tee -a ${results_file}  
-    printf "CDS bases in 1-22,X,Y: %d\n" ${CDS_bases} | tee -a ${results_file}  
-    printf "Total genome SNVs: %d\n" ${total_SNVs} | tee -a ${results_file}  
-    printf "Total genome Indels: %d\n" ${total_Indels} | tee -a ${results_file}  
-    printf "Coding SNVs: %d\n" ${coding_SNVs} | tee -a ${results_file}  
-    printf "Coding Indels: %d\n" ${coding_Indels} | tee -a ${results_file}  
-    printf "============== Final results below ================\n" | tee -a ${results_file}  
-    printf "Genome SNV TMB: %3.2f\n" `echo "scale=8; ${total_SNVs} * 1000000 / ${total_bases}" | bc` | tee -a ${results_file}  
-    printf "Genome Indel TMB: %3.2f\n" `echo "scale=8; ${total_Indels} * 1000000 / ${total_bases}" | bc` | tee -a ${results_file}  
-    printf "Coding SNV TMB: %3.2f\n" `echo "scale=8; ${coding_SNVs} * 1000000 / ${CDS_bases}" | bc` | tee -a ${results_file}  
-    printf "Coding Indel TMB: %3.2f\n" `echo "scale=8; ${coding_Indels} * 1000000 / ${CDS_bases}" | bc` | tee -a ${results_file}  
-    printf "MSI score: %3.2f\n" ${MSI_score} | tee -a ${results_file}  
-    printf "Report Complete!" | tee -a ${results_file}  
- 
 %post
     mkdir /usr/TMB
     cd /usr/TMB
@@ -191,6 +18,25 @@ Include: yum
     yum -y install make
     yum -y install gcc
     yum -y install bc
+    yum -y install git
+
+    #install fastp
+    wget http://opengene.org/fastp/fastp
+    chmod a+x ./fastp
+
+    #install bwa
+    wget https://github.com/lh3/bwa/releases/download/v0.7.17/bwa-0.7.17.tar.bz2
+    tar -xf bwa-0.7.17.tar.bz2
+    cd bwa-0.7.17
+    make
+    cp bwa ..
+    cd ..    
+
+    #install sambamba
+    wget https://github.com/biod/sambamba/releases/download/v0.5.5/sambamba_v0.5.5_linux.tar.bz2
+    tar -xf sambamba_v0.5.5_linux.tar.bz2
+    ln -s sambamba_v0.5.5 sambamba 
+    chmod 775 sambamba
 
     #install strelka2.9.2
     wget https://github.com/Illumina/strelka/releases/download/v2.9.2/strelka-2.9.2.centos6_x86_64.tar.bz2
@@ -206,9 +52,12 @@ Include: yum
     #run a small tests in Manta
     # python manta-1.6.0.centos6_x86_64/bin//runMantaWorkflowDemo.py
 
+
+
     #bedtools
     wget https://github.com/arq5x/bedtools2/releases/download/v2.29.2/bedtools.static.binary
     chmod 775 bedtools.static.binary
+    ln -s bedtools.static.binary bedtools
 
     #seqtk for counting fasta bases quickly
     wget https://github.com/lh3/seqtk/archive/v1.3.tar.gz
@@ -216,6 +65,7 @@ Include: yum
     cd seqtk-1.3/
     make
     cd /usr/TMB
+    ln -s /usr/TMB/seqtk-1.3/seqtk
 
     #install snpEff
     wget https://cfhcable.dl.sourceforge.net/project/snpeff/snpEff_v4_3t_core.zip
@@ -223,15 +73,17 @@ Include: yum
    
     #Set up Ensembl 75 GRCh37 database (will take a few minutes)
     java -jar /usr/TMB/snpEff/snpEff.jar download GRCh37.75 
-    #extract the stats for the annotations
-    java -jar /usr/TMB/snpEff/snpEff.jar dump -v -bed GRCh37.75 > GRCh37.70.bed
+    #extract the stats for the annotations - needs about 16Gb od RAM so this won't build on singularityhub where the RAM limit is 3.5Gb.
+    java -jar /usr/TMB/snpEff/snpEff.jar dump -v -bed GRCh37.75 > GRCh37.75.bed
     #get the size of the CDS
-    grep ^[1234567890XY] GRCh37.70.bed | grep CDS | ./bedtools.static.binary sort | ./bedtools.static.binary sort | awk '{ print $3-$2 }' | paste -sd+ | bc > CDS_size.txt
+    grep -E '^[1234567890XY]{1,2}\s' GRCh37.75.bed | grep CDS | ./bedtools.static.binary sort | ./bedtools.static.binary merge | awk '{ print $3-$2 }' | paste -sd+ | bc > CDS_size.txt
     
     #msisensor install - would be nice to scan the reference at setup, but it needs to match the reference supplied at runtime.
-    wget https://github.com/ding-lab/msisensor/releases/download/0.2/msisensor.linux
-    chmod 775 msisensor.linux
-    wget https://www.bcgsc.ca/downloads/rcorbett/TMB/microsatellites.rep1
+    git clone https://github.com/niu-lab/msisensor2.git
+    cd msisensor2
+    chmod +x msisensor2
+    cd ..
+    ln -s msisensor2/msisensor2 msisensor
 
 %environment
     export PATH=/usr/TMB:$PATH
