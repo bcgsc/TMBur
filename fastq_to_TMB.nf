@@ -18,27 +18,6 @@
 	"""
 	.stripIndent()
 
-/*
-binaries
-*/
-
-/*
-bbmerge="~/bin/bbmap/bbmerge.sh"
-bwa="/gsc/software/linux-x86_64-centos7/bwa-0.7.17/bwa"
-skewer="/gsc/software/linux-x86_64-centos6/skewer-0.1.127/skewer"
-sambamba="/gsc/software/linux-x86_64/sambamba-0.5.5/sambamba_v0.5.5"
-//sambamba="/home/rcorbett/bin/sambamba-0.7.1-linux-static"  //better error reporting than 0.5.5, but MUCH slower
-manta="/projects/vleblanc_prj/tools/manta-1.6.0.centos6_x86_64/bin/configManta.py"
-strelka="/projects/da_workspace/DA-228/strelka-2.9.2.centos6_x86_64/bin//configureStrelkaSomaticWorkflow.py"
-python="~/python-2.7-venv/bin/python"
-snpSift="/home/rcorbett/bin/snpEff/snpEff/SnpSift.jar"
-snpEff="/home/rcorbett/bin/snpEff/snpEff.jar"
-seqtk="/home/rcorbett/bin/seqtk/seqtk-1.3/seqtk"
-bedtools="/home/rcorbett/bin/bedtools2//bin/bedtools"
-msisensor2="/gsc/software/linux-x86_64-centos7/msisensor2-0.1/msisensor2"
-msisensor_resources="/gsc/resources/pipeline/msisensor/models_b37_HumanG1Kv37/1030c0aa35ca5c263daeae866ad18632"
-fastp="/home/rcorbett/bin/fastp"
-*/
 
 //Load in the samples file
 Channel
