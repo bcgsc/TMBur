@@ -21,12 +21,13 @@
 /*
 binaries
 */
+
+/*
 bbmerge="~/bin/bbmap/bbmerge.sh"
 bwa="/gsc/software/linux-x86_64-centos7/bwa-0.7.17/bwa"
 skewer="/gsc/software/linux-x86_64-centos6/skewer-0.1.127/skewer"
 sambamba="/gsc/software/linux-x86_64/sambamba-0.5.5/sambamba_v0.5.5"
 //sambamba="/home/rcorbett/bin/sambamba-0.7.1-linux-static"  //better error reporting than 0.5.5, but MUCH slower
-samtools="/gsc/software/linux-x86_64-centos7/samtools-1.9/bin/samtools"
 manta="/projects/vleblanc_prj/tools/manta-1.6.0.centos6_x86_64/bin/configManta.py"
 strelka="/projects/da_workspace/DA-228/strelka-2.9.2.centos6_x86_64/bin//configureStrelkaSomaticWorkflow.py"
 python="~/python-2.7-venv/bin/python"
@@ -36,7 +37,8 @@ seqtk="/home/rcorbett/bin/seqtk/seqtk-1.3/seqtk"
 bedtools="/home/rcorbett/bin/bedtools2//bin/bedtools"
 msisensor2="/gsc/software/linux-x86_64-centos7/msisensor2-0.1/msisensor2"
 msisensor_resources="/gsc/resources/pipeline/msisensor/models_b37_HumanG1Kv37/1030c0aa35ca5c263daeae866ad18632"
-
+fastp="/home/rcorbett/bin/fastp"
+*/
 
 //Load in the samples file
 Channel
@@ -63,7 +65,7 @@ process count_fasta_bases {
 
 	script:
 	"""
-		$seqtk comp ${fasta} | grep -E '^[123456789XY]{1,2}\\s' | awk '{ print \$3+\$4+\$5+\$6 }' | paste -sd+ | bc > "base_count.txt"
+		seqtk comp ${fasta} | grep -E '^[123456789XY]{1,2}\\s' | awk '{ print \$3+\$4+\$5+\$6 }' | paste -sd+ | bc > "base_count.txt"
 	"""
 }
 
@@ -77,50 +79,33 @@ process count_CDS_bases {
 
 	script:
 	"""
-		java -jar $snpEff  dump -v -bed $anno > ${anno}.bed
-		grep -E '^[1234567890XY]{1,2}\\s' ${anno}.bed | grep CDS | $bedtools sort | $bedtools merge | awk '{ print \$3-\$2 }' | paste -sd+ | bc > CDS_size.txt
+		java -jar /usr/TMB/snpEff/snpEff.jar  dump -v -bed $anno > ${anno}.bed
+		grep -E '^[1234567890XY]{1,2}\\s' ${anno}.bed | grep CDS | bedtools sort | bedtools merge | awk '{ print \$3-\$2 }' | paste -sd+ | bc > CDS_size.txt
 	"""
 }
 
-process predict_adapter {
-	tag "$an_id"
-	memory '24 GB'
-	cpus 24
-	publishDir "${params.out_dir}/adapter_predictions/${an_id}"
+process trim_pair {
+    tag "$an_id"
+	cpus 10
+	publishDir "${params.out_dir}", mode: 'copy', overwrite: true
 
 	input:
 		tuple an_id, patient, tissue, file(reads1), file(reads2) from samples_ch
 
 	output:
-		tuple an_id, file("${an_id}_adapters.fa") into adapter_ch
-
+        tuple an_id, patient, tissue, file("${reads1}.fastp.trimmed.fq.gz"),
+			file("${reads2}.fastp.trimmed.fq.gz") into trimmed_reads_ch
+        file("${an_id}.fastp.json") into paired_trimmed_report_ch
+		
 	script:
-	"""
-		$bbmerge in1=${reads1} in2=${reads2} outa=${an_id}_adapters.fa
-	"""
-}
-
-adapter_reads_predictions_ch = adapter_ch.join(samples_ch2, remainder : true)
-
-process trim_adapter {
-	tag "$an_id"
-	cpus 24
-	memory '12 GB'
-
-	input:
-		tuple an_id, file(adapter_predictions), patient, tissue, file(reads1), file(reads2) from adapter_reads_predictions_ch
-
-	output:
-		tuple an_id, patient, tissue, file("${an_id}-trimmed-pair1.fastq.gz"), file("${an_id}-trimmed-pair2.fastq.gz") into trimmed_reads_ch
-
-	script: // using sed for the cases where a single N is reported as the adapter, which 
-			// make skewer trim almost everything.
-	"""
-		head -2 ${adapter_predictions} | sed 's/^N\$//' > r1.fa
-		tail -2 ${adapter_predictions} | sed 's/^N\$//' > r2.fa
-
-		$skewer --quiet -t 24 -k 5 -x r1.fa -y r2.fa -z -o ${an_id} ${reads1} ${reads2}
-	"""
+ 	"""
+		fastp \
+		-i ${reads1} \
+		-I ${reads2} \
+		-o ${reads1}.fastp.trimmed.fq.gz \
+		-O ${reads2}.fastp.trimmed.fq.gz \
+		--json ${an_id}.fastp.json
+ 	"""
 }
 
 process align_reads {
@@ -137,8 +122,7 @@ process align_reads {
 
 	script:
 	"""
-		#FIXME - use the reference channel for input
-		$bwa mem ${reference_fasta} -t 48 ${trim1} ${trim2} > ${an_id}.sam
+		bwa mem ${reference_fasta} -t 48 ${trim1} ${trim2} > ${an_id}.sam
 	"""
 }
 
@@ -157,7 +141,7 @@ process sam_to_bam {
 
 	script:
  	"""
-		$sambamba view -S -f bam ${sam_file} > ${an_id}.bam
+		sambamba view -S -f bam ${sam_file} > ${an_id}.bam
  	"""
 }
 
@@ -173,7 +157,7 @@ process sort_bam {
 
 	script:
 	"""
-		$sambamba sort ${unsorted_bam_file}
+		sambamba sort --tmpdir . ${unsorted_bam_file}
 	"""
 }
 
@@ -205,7 +189,7 @@ process merge_bam {
 
 	script:
 	"""
-		$sambamba merge ${patient}-${tissue}_merged.bam $bams_to_merge
+		sambamba merge ${patient}-${tissue}_merged.bam $bams_to_merge
 	"""
 }
 
@@ -229,7 +213,7 @@ process mark_duplicates {
 
 	script:
 	"""
-		$sambamba markdup \
+		sambamba markdup \
 		--nthreads 8 \
 		--tmpdir /var/tmp \
 		--hash-table-size 5000000 \
@@ -273,8 +257,12 @@ process manta {
 
  	script:
  	"""
-		$manta --normalBam=${N_bam} --tumorBam=${T_bam} --referenceFasta=${reference}  --runDir Manta
-		$python Manta/runWorkflow.py -m local -j 48
+		/usr/TMB/manta-1.6.0.centos6_x86_64/bin/configManta.py \
+			--normalBam=${N_bam} \
+			--tumorBam=${T_bam} \
+			--referenceFasta=${reference}  \
+			--runDir Manta
+		python Manta/runWorkflow.py -m local -j 48
 
 		mv Manta/results/variants/candidateSmallIndels.vcf.gz \
 			Manta_${patient}_${T}_vs_${N}.candidateSmallIndels.vcf.gz
@@ -314,11 +302,12 @@ process strelka {
 
 	script:
 	"""
-		$strelka --tumor ${T_bam} \
+		/usr/TMB/strelka-2.9.2.centos6_x86_64/bin//configureStrelkaSomaticWorkflow.py \
+		    --tumor ${T_bam} \
 			--normal ${N_bam} \
 			--referenceFasta ${reference} \
 			--runDir Strelka
-		$python Strelka/runWorkflow.py -m local -j 48
+		python Strelka/runWorkflow.py -m local -j 48
 
 		mv Strelka/results/variants/somatic.indels.vcf.gz \
 			Strelka_${patient}_${T}_vs_${N}_somatic_indels.vcf.gz
@@ -348,12 +337,12 @@ process MSIsensor2 {
 		tuple val("msisensor2"), patient, T, N, 
 			file("msisensor2_${patient}_${T}_${N}.txt") into msi_results_ch
 
-	script:
+	script: //Had to take the "2" off the binary name due to folder naming clashes in the container
 	"""
-		${msisensor2} msi \
+		msisensor msi \
 		-t ${T_bam} \
 		-n ${N_bam} \
-		-d ${msisensor_resources} \
+		-d /usr/TMB/msisensor2/models_b37_HumanG1Kv37/1030c0aa35ca5c263daeae866ad18632 \
 		-b 32 \
 		-o msisensor2_${patient}_${T}_${N}.txt 2> msisensor2_out_${patient}_${T}_${N}.log
 	"""
@@ -388,7 +377,7 @@ process get_passed_variants {
 
 	script:
 	"""
-		java -Xmx2g -jar $snpSift filter "(FILTER = 'PASS')" ${vcf} > ${vcf.baseName}.pass.vcf
+		java -Xmx2g -jar /usr/TMB/snpEff/SnpSift.jar filter "(FILTER = 'PASS')" ${vcf} > ${vcf.baseName}.pass.vcf
 	"""
 }
 
@@ -407,7 +396,7 @@ process annotate {
 
 	script:
 	"""
-		java -Xmx48g -jar $snpEff GRCh37.75 -s somatic.snvs.PASS.vcf ${vcf} > ${vcf.baseName}.snpEff.vcf
+		java -Xmx48g -jar /usr/TMB/snpEff/snpEff.jar GRCh37.75 -s somatic.snvs.PASS.vcf ${vcf} > ${vcf.baseName}.snpEff.vcf
 	"""
 }
 
@@ -450,10 +439,10 @@ process print_report {
 
 		total_SNVs=`cat ${vcf_files[2]} | grep -v ^# | wc -l`
 		total_Indels=`cat ${vcf_files[1]} | grep -v ^# | wc -l`
-		coding_SNVs=`java -Xmx16g -jar ${snpSift} filter \
+		coding_SNVs=`java -Xmx16g -jar /usr/TMB/snpEff/SnpSift.jar filter \
 			"(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" \
 			${vcf_files[2]} | grep -E '^[1234567890XY]{1,2}\\s' | wc -l`
-  		coding_Indels=`java -Xmx16g -jar ${snpSift} filter \
+  		coding_Indels=`java -Xmx16g -jar /usr/TMB/snpEff/SnpSift.jar filter \
 		  	"(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" \
 			${vcf_files[1]} | grep -E '^[1234567890XY]{1,2}\\s' | wc -l`
 		msi_score=`awk 'NR==2 { print \$NF }' ${vcf_files[3]}`
