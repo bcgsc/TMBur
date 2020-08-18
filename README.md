@@ -8,17 +8,17 @@ a unified analysis pipepline was desired to go from fastq files to TMB estimates
 software that can be deployed at all of the PROFYLE sites.
 
 This project uses the following technologies to make the code reprodicible and portable:
-[nextflow] (https://www.nextflow.io/)
-[singularity] https://sylabs.io/singularity/
++ [nextflow] (https://www.nextflow.io/)
++ [singularity] https://sylabs.io/singularity/
 
 The container and workflow leverage the following bioinformatics tools:
-[fastp] (https://github.com/OpenGene/fastp)
-[BWA] (https://github.com/lh3/bwa)
-[sambamba] (https://github.com/biod/sambamba)
-[Manta] (https://github.com/Illumina/manta)
-[Strelka2] (https://github.com/Illumina/strelka)
-[MSIsensor2] (https://github.com/niu-lab/msisensor2)
-[SnpEff] (https://pcingola.github.io/SnpEff/)
++ [fastp] (https://github.com/OpenGene/fastp)
++ [BWA] (https://github.com/lh3/bwa)
++ [sambamba] (https://github.com/biod/sambamba)
++ [Manta] (https://github.com/Illumina/manta)
++ [Strelka2] (https://github.com/Illumina/strelka)
++ [MSIsensor2] (https://github.com/niu-lab/msisensor2)
++ [SnpEff] (https://pcingola.github.io/SnpEff/)
 
 
 ## Getting started
@@ -76,7 +76,7 @@ up to 50 jobs to run at once.
 3. `-w /path/to/folder` can be used to have all of the intermidiate analysis files stored somewhere
 other than the `work` folder in the current directory.
 
-## space
+## Space
 The `work` folder can get quite large. It would be good practise to ensure you have ~1.5Tb per
 sample that you want to analyze.  Once the analysis is complete you can delete the `work`
 folder as the final results files have been copied over to the `--out_dir`.  The `--out_dir`
