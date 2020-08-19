@@ -8,7 +8,7 @@ Include: yum
     	 It should be orchestrated using the associated nextflow scripts."
     
 %post
-    mkdir /usr/TMB
+    mkdir -p /usr/TMB
     cd /usr/TMB
     
     yum -y update 
@@ -52,8 +52,6 @@ Include: yum
     #run a small tests in Manta
     # python manta-1.6.0.centos6_x86_64/bin//runMantaWorkflowDemo.py
 
-
-
     #bedtools
     wget https://github.com/arq5x/bedtools2/releases/download/v2.29.2/bedtools.static.binary
     chmod 775 bedtools.static.binary
@@ -84,6 +82,9 @@ Include: yum
     chmod +x msisensor2
     cd ..
     ln -s msisensor2/msisensor2 msisensor
+
+%files
+    allele_counts_from_strelka.py /usr/TMB/allele_counts_from_strelka.py 
 
 %environment
     export PATH=/usr/TMB:$PATH
