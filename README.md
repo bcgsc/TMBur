@@ -23,7 +23,7 @@ The container and workflow leverage the following bioinformatics tools:
 
 ## Getting started
 
-### install Nextflow
+### Install Nextflow
 First, you need to be able to run nextflow.  Fortunately, it is easy to install:
 [nextflow] (https://www.nextflow.io/),  but if you already have java 1.8 installed
 you run just run:
