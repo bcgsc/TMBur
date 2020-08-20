@@ -27,11 +27,17 @@ The container and workflow leverage the following bioinformatics tools for analy
 ### Install Nextflow
 First, you need to be able to run nextflow.  Fortunately, it is easy to install:  
 [with details here] (https://www.nextflow.io/),  
-but if you already have java 1.8 installed you can just run  
-`curl -s https://get.nextflow.io | bash `  
-to run a quick test, run this in another folder (away from the `nextflow.config` file   
-in this repository) then to test the installation:    
-`/path/to/nextflow run hello`
+but if you already have java 1.8 installed you can just cd to the folder where you want  
+to install it and run  
+`curl -s https://get.nextflow.io | bash `.  
+It is recommended that you install nextflow in a central locaton and not in the same  
+folder as the repository files so that you can run this simple test:  
+  
+To run a quick test of your installation, run this in another folder   
+(away from the `nextflow.config` file in this repository):    
+```
+/path/to/nextflow run hello
+```
 
 
 ### Samples CSV file
