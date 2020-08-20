@@ -20,8 +20,8 @@ The container and workflow leverage the following bioinformatics tools for analy
 + [MSIsensor2] (https://github.com/niu-lab/msisensor2)
 + [SnpEff] (https://pcingola.github.io/SnpEff/)
 
-
-
+  
+  
 ## Getting started
 
 ### Install Nextflow
@@ -53,6 +53,9 @@ in a set of analsys results for each possible pair.
 
 You can set up a csv file that contains many samples if you want to run them  
 all at once.
+
+  
+  
 
 
 ## Running the pipeline
@@ -87,6 +90,7 @@ other than the `work` folder in the current directory.
 crashes at run time, using `-resume` will make sure that the analysis that was done upstream doesn't   
 get re-run.   If you want to add another sample or pair of fastq files to the CSV file after you have   
 processed other samples `-resume` will ensure that only the new samples get analyzed. 
+  
 
 ## Space
 The `work` folder can get quite large. It would be good practise to ensure you have ~1.5Tb per  
@@ -94,6 +98,7 @@ sample that you want to analyze.  Once the analysis is complete you can delete t
 folder as the final results files have been copied over to the `--out_dir`.  *The `--out_dir`  
 folder contains symlinks to the VCF and BAM files in case you want to copy them from the `work`  
 folder before cleaning up.*
+  
 
 ## Output
 The output folder, with name format `sample_tumour_normal` will contain a file named `TMB_counts.txt` where   
@@ -112,7 +117,8 @@ Field | Comment
  Coding SNV TMB |              coding_SNVs * 1000000 / CDS_bases
  Coding Indel TMB |           coding_Indels * 1000000 / CDS_bases
  MSI score |                   Fraction of sites reported as MSI by MSIsensor2
-
+  
+  
  *BETA*  Variant Allele Fractions
 The allele fraction the somatic variants are split into bins ranging in increments of 0.05 and are  
 listed in these two files:
