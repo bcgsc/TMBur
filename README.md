@@ -21,7 +21,7 @@ The container and workflow leverage the following bioinformatics tools for analy
 + [SnpEff] (https://pcingola.github.io/SnpEff/)
 
   
-  
+&nbsp;
 ## Getting started
 
 ### Install Nextflow
@@ -54,9 +54,6 @@ in a set of analsys results for each possible pair.
 You can set up a csv file that contains many samples if you want to run them  
 all at once.
 
-  
-  
-
 
 ## Running the pipeline
 In this repository there is a file called `nextflow.config` that contains some   
@@ -71,10 +68,12 @@ head node and if you want to use a specific partition on your cluster you need t
 `queue` appropriately.
 
 To run the pipeline you can start with this command:  
-```nextflow run fastq_to_TMB.nf   
+```
+nextflow run fastq_to_TMB.nf   
     --samples_file /path/to/samples.csv   
     --reference /projects/rcorbettprj2/mutationalBurden/PROFYLE_container/PROFYLE_tests/hs37d5.fa  
-    --out_dir ./TMB_out```
+    --out_dir ./TMB_out  
+```
 **The reference needs to be indexed with BWA.**
 `--out_dir` will be where the final results are copied.   During the run a folder called `work`  
 will be created in the current directory that contains all of the intermediate files.
@@ -118,7 +117,7 @@ Field | Comment
  Coding Indel TMB |           coding_Indels * 1000000 / CDS_bases
  MSI score |                   Fraction of sites reported as MSI by MSIsensor2
   
-  
+
  *BETA*  Variant Allele Fractions
 The allele fraction the somatic variants are split into bins ranging in increments of 0.05 and are  
 listed in these two files:
