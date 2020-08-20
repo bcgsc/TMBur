@@ -66,7 +66,8 @@ process count_CDS_bases {
 process trim_pair {
     tag "$an_id"
 	cpus 10
-	publishDir "${params.out_dir}", mode: 'copy', overwrite: true
+	// decided we didkn't need to keep the trimmed fastqs
+	// publishDir "${params.out_dir}", mode: 'copy', overwrite: true
 
 	input:
 		tuple an_id, patient, tissue, file(reads1), file(reads2) from samples_ch
@@ -389,7 +390,7 @@ for_print_ch.view{ println "[vcfs] $it"}
 annotated_vcf_ch.mix(msi_results_ch)
 	.groupTuple(by:[1,2,3])
 	.map { tool, patient, T, N, vcf -> [patient, T, N, vcf.sort{it.simpleName} ] }
-	.into{vcf_for_report_ch; vcf_for_print} 
+	.into{vcf_for_report_ch; vcf_for_print; vcf_for_AF} 
 vcf_for_print.view{ println "[collapsed] $it"}
 
 
@@ -409,12 +410,27 @@ process print_report {
 		*/
 
 	output:
-		tuple patient, T, N, file("TMB_counts.txt") into final_results_ch
+		tuple patient, T, N, file("TMB_counts.txt"), file("passed_SNV_AF_counts.txt"),
+		file("passed_SNV_coding_AF_counts.txt") into final_results_ch
 
 	script:
 	"""
 		total_bases=`cat ${base_count}`
 		total_CDS_bases=`cat ${cds_count}`
+
+		python /usr/TMB/allele_counts_from_strelka.py -v ${vcf_files[2]}
+		
+		for file in \$(ls *_af_*vcf); do \
+			echo -n "\$file ";
+			cat \$file | grep -v ^# | wc -l;
+		done > passed_SNV_AF_counts.txt
+
+		for file in \$(ls *_af_*vcf); do \
+			echo -n "\$file " ;
+			java -Xmx16g -jar /usr/TMB/snpEff/SnpSift.jar filter \
+			"(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" \
+			\${file} | grep -E '^[1234567890XY]{1,2}\\s' | wc -l;
+		done > passed_SNV_coding_AF_counts.txt
 
 		total_SNVs=`cat ${vcf_files[2]} | grep -v ^# | wc -l`
 		total_Indels=`cat ${vcf_files[1]} | grep -v ^# | wc -l`
