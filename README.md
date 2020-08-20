@@ -42,7 +42,7 @@ To run a quick test of your installation, run this in another folder
 
 ### Samples CSV file
 Next you need to set up a csv file that describes that fastqs to use.  
-** Make sure to list the residing path for the fastq files **.  Providing paths  
+**Make sure to list the residing path for the fastq files**.  Providing paths  
 that are sym-links to files elsewhere on your filesystem may cause problems.  
 
 An example csv file:
@@ -130,5 +130,5 @@ The allele fraction the somatic variants are split into bins ranging in incremen
 listed in these two files:
 1. `passed_SNV_AF_counts.txt`
 1. `passed_SNV_coding_AF_counts.txt`
-The sum of the counts in each file amount to the counts reported in `TMB_counts.txt`  
+The sum of the counts in each file amount to the counts reported in `TMB_counts.txt`    
 These values may be of use when considering clonality for TMB estimates.
