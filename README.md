@@ -28,9 +28,10 @@ The container and workflow leverage the following bioinformatics tools for analy
 First, you need to be able to run nextflow.  Fortunately, it is easy to install:  
 [with details here] (https://www.nextflow.io/),  
 but if you already have java 1.8 installed you can just run  
-`curl -s https://get.nextflow.io | bash `
-and then to test the installation:  
-`./nextflow run hello`
+`curl -s https://get.nextflow.io | bash `  
+to run a quick test, run this in another folder (away from the `nextflow.config` file   
+in this repository) then to test the installation:    
+`/path/to/nextflow run hello`
 
 
 ### Samples CSV file
@@ -123,5 +124,5 @@ The allele fraction the somatic variants are split into bins ranging in incremen
 listed in these two files:
 1. `passed_SNV_AF_counts.txt`
 1. `passed_SNV_coding_AF_counts.txt`
-The sum of the counts in each file amount to the counts reported in `TMB_counts.txt`
+The sum of the counts in each file amount to the counts reported in `TMB_counts.txt`  
 These values may be of use when considering clonality for TMB estimates.
