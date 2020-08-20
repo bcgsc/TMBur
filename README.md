@@ -21,6 +21,7 @@ The container and workflow leverage the following bioinformatics tools for analy
 + [SnpEff] (https://pcingola.github.io/SnpEff/)
 
 
+
 ## Getting started
 
 ### Install Nextflow
@@ -67,7 +68,10 @@ head node and if you want to use a specific partition on your cluster you need t
 `queue` appropriately.
 
 To run the pipeline you can start with this command:  
-`nextflow run fastq_to_TMB.nf --samples_file /path/to/samples.csv  --reference /projects/rcorbettprj2/mutationalBurden/PROFYLE_container/PROFYLE_tests/hs37d5.fa --out_dir ./TMB_out`
+```nextflow run fastq_to_TMB.nf   
+    --samples_file /path/to/samples.csv   
+    --reference /projects/rcorbettprj2/mutationalBurden/PROFYLE_container/PROFYLE_tests/hs37d5.fa  
+    --out_dir ./TMB_out```
 **The reference needs to be indexed with BWA.**
 `--out_dir` will be where the final results are copied.   During the run a folder called `work`  
 will be created in the current directory that contains all of the intermediate files.
