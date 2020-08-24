@@ -85,6 +85,15 @@ Include: yum
 
 %files
     allele_counts_from_strelka.py /usr/TMB/allele_counts_from_strelka.py 
+    #copy in our version of hg19 with the pre-built index. This way no-one can use a different one.
+    hs37d5.fa /usr/TMB/hs37d5.fa
+    hs37d5.fa.amb /usr/TMB/hs37d5.fa.amb
+    hs37d5.fa.ann /usr/TMB/hs37d5.fa.ann
+    hs37d5.fa.bwt /usr/TMB/hs37d5.fa.bwt
+    hs37d5.fa.fai /usr/TMB/hs37d5.fa.fai
+    hs37d5.fa.pac /usr/TMB/hs37d5.fa.pac
+    hs37d5.fa.sa  /usr/TMB/hs37d5.fa.sa
+
 
 %environment
     export PATH=/usr/TMB:$PATH
