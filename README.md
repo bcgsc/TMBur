@@ -5,7 +5,9 @@ https://www.tfri.ca/profyle
 
 In order to harmonize Tumour Mutation Burden (TMB) estimates across PROFYLE sites,  
 a unified analysis pipepline was desired to go from fastq files to TMB estimates using  
-software that can be deployed to all of the PROFYLE locations.  
+software that can be deployed to all of the PROFYLE locations.    
+
+**To ensure reproducibility the current version uses the hs37d5 reference with ens75 annotations and cannot be changed**    
 
 This project uses the following technologies to make the code reprodicible and portable:
 + [nextflow] (https://www.nextflow.io/)
@@ -78,10 +80,9 @@ To run the pipeline you can start with this command:
 ```
 nextflow run fastq_to_TMB.nf   
     --samples_file /path/to/samples.csv   
-    --reference /projects/rcorbettprj2/mutationalBurden/PROFYLE_container/PROFYLE_tests/hs37d5.fa  
     --out_dir ./TMB_out  
 ```
-**The reference needs to be indexed with BWA.**
+
 `--out_dir` will be where the final results are copied.   During the run a folder called `work`  
 will be created in the current directory that contains all of the intermediate files.
 
@@ -98,7 +99,7 @@ get re-run.   If you want to add another sample or pair of fastq files to the CS
 processed other samples `-resume` will ensure that only the new samples get analyzed. 
   
 &nbsp;  
-## Storage Space
+## Storage space
 The `work` folder can get quite large. It would be good practise to ensure you have ~1.5Tb per  
 sample that you want to analyze.  Once the analysis is complete you can delete the `work`   
 folder as the final results files have been copied over to the `--out_dir`.  *The `--out_dir`  
@@ -125,7 +126,7 @@ Field | Comment
  MSI score |                   Fraction of sites reported as MSI by MSIsensor2
   
 &nbsp;  
-*BETA*  Variant Allele Fractions
+**BETA**  Variant Allele Fractions
 The allele fraction the somatic variants are split into bins ranging in increments of 0.05 and are  
 listed in these two files:
 1. `passed_SNV_AF_counts.txt`
