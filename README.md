@@ -74,7 +74,8 @@ are running analysis in the cloud, you will want to set `executor` to either `lo
 run all the commands on the current machine) or `slurm` to run all the jobs using a  
 slurm scheduler.   If you use `slurm` you want to run the nextflow command on your cluster   
 head node and if you want to use a specific partition on your cluster you need to set   
-`queue` appropriately.
+`queue` appropriately. All of the available executors with instructions for what to put in the
+`nextflow.config` file are here: (https://www.nextflow.io/docs/latest/executor.html)
 
 To run the pipeline you can start with this command:  
 ```
