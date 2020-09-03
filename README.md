@@ -77,7 +77,7 @@ head node and if you want to use a specific partition on your cluster you need t
 `queue` appropriately. All of the available executors with instructions for what to put in the   
 `nextflow.config` file are here: (https://www.nextflow.io/docs/latest/executor.html)   
   
-To run the pipeline you can start with this command:  
+**To run the pipeline you can start with this command**:  
 ```
 nextflow run fastq_to_TMB.nf   
     --samples_file /path/to/samples.csv   
