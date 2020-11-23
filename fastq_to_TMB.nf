@@ -5,17 +5,17 @@
 */
 	params.samples_file = "/projects/rcorbettprj2/mutationalBurden/PROFYLE_container/2p0/test_data/samples.csv"
 	params.out_dir = "/projects/rcorbettprj2/mutationalBurden/PROFYLE_container/2p0/test_data/output"
-	params.annotation = "GRCh37.75"
-	params.reference = "/projects/alignment_references/Homo_sapiens/hg19a/genome/bwa_64/hg19a.fa"
+	//params.annotation = "GRCh37.75"
+	//params.reference = "/projects/alignment_references/Homo_sapiens/hg19a/genome/bwa_64/hg19a.fa"
 	
 	log.info """\
 	TMB estimation pipeline
 	===================================
 	samples_file : ${params.samples_file}
 	out_dir      : ${params.out_dir}
-	annotations  : ${params.annotation}
-	reference    : ${params.reference}
 	"""
+	//annotations  : ${params.annotation}
+	//reference    : ${params.reference}
 	.stripIndent()
 
 
@@ -29,10 +29,48 @@ Channel
 samples_4print.subscribe onNext: { println "[samples] $it"}
 
 //value channels can be re-used as many times as we like
-ref_ch = Channel.value(file(params.reference))
-annotation_ch = Channel.value(params.annotation)
-bwa_index_ch = Channel.value(file("${params.reference}.*"))
-fasta_index_ch = Channel.value(file("${params.reference}.fai"))
+ref_name_ch = Channel.value("/reference/hs37d5.fa")
+annotation_ch = Channel.value("GRCh37.75")
+//bwa_index_ch = Channel.value(file("${params.reference}.*"))
+//fasta_index_ch = Channel.value(file("${params.reference}.fai"))
+
+
+//This is a hacky way to get the reference out of the container
+//without getting bind errors in singularity
+process copy_reference {
+	tag "$fasta"
+	input:
+		file(fasta_name) from ref_name_ch
+
+	output:
+		file("*.fa") into ref_ch
+
+	script:
+	"""
+		cat input.1 | xargs -i cp {} .
+	"""
+}
+
+//Wanted to keep the reference index inside the container, but it pushes the size over 5Gb
+//and doesn't fit on the sylabs repository.  So copy_reference moves the fasta from the container
+//(required for some singularity path collision avoidance) and then indices are created.
+process index_reference {
+	tag "$fasta"
+	input:
+		file(fasta) from ref_ch
+
+	output:
+		file("${fasta}.*") into bwa_index_ch
+		file("${fasta}.fai") into fasta_index_ch
+
+	script:
+	"""
+		/usr/TMB/bwa index ${fasta}
+		/usr/TMB/samtools faidx ${fasta}
+	"""
+}
+//make this a constant so it can be used many times below
+fasta_index_ch.into{fasta_index_ch1;fasta_index_ch2;fasta_index_ch3;fasta_index_ch4}
 
 process count_fasta_bases {
 	tag "$fasta"
@@ -225,7 +263,7 @@ process manta {
 	input:
 		tuple patient, T, file(T_bam), file(T_bai), N, file(N_bam),
 			file(N_bai) from bams_for_somatic_ch
-		file(fai_file) from fasta_index_ch
+		file(fai_file) from fasta_index_ch1
 		file(reference) from ref_ch
 
 	output:
@@ -273,7 +311,7 @@ process strelka {
 		tuple patient, T, file(T_bam), file(T_bai), N, file(N_bam), file(N_bai),
 			file(small_indels_from_manta),
 			file(small_indels_from_manta_index) from manta_for_strelka_ch
-		file(fai_file) from fasta_index_ch
+		file(fai_file) from fasta_index_ch2
 		file(reference) from ref_ch
 
 	output:
@@ -442,7 +480,7 @@ process print_report {
 			${vcf_files[1]} | grep -E '^[1234567890XY]{1,2}\\s' | wc -l`
 		msi_score=`awk 'NR==2 { print \$NF }' ${vcf_files[3]}`
     	
-		echo "TMB Pipeline V0.2" > TMB_counts.txt
+		echo "TMB Pipeline V0.2.1" > TMB_counts.txt
 		echo "Config file ${params.samples_file}"
 		echo "Patient: ${patient}"
 		echo "Tumour: ${T}" >> TMB_counts.txt
