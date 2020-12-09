@@ -8,6 +8,7 @@ Include: yum
     	 It should be orchestrated using the associated nextflow scripts."
     
 %post
+    mkdir -p /reference
     mkdir -p /usr/TMB
     cd /usr/TMB
     
@@ -19,6 +20,17 @@ Include: yum
     yum -y install gcc
     yum -y install bc
     yum -y install git
+    yum -y install bzip2-devel
+    yum -y install xz-devel
+
+    #install samtools
+    wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
+    tar xvjf samtools-1.9.tar.bz2
+    cd samtools-1.9
+    ./configure --prefix=/usr/local
+    make
+    cp samtools ..
+    cd ..
 
     #install fastp
     wget http://opengene.org/fastp/fastp
@@ -83,17 +95,20 @@ Include: yum
     cd ..
     ln -s msisensor2/msisensor2 msisensor
 
+    #install gatk
+    wget https://github.com/broadinstitute/gatk/releases/download/4.0.10.0/gatk-4.0.10.0.zip
+    unzip gatk-4.0.10.0.zip
+
+    #install RTGtools
+    wget https://github.com/RealTimeGenomics/rtg-tools/releases/download/3.11/rtg-tools-3.11-linux-x64.zip
+    unzip rtg-tools-3.11-linux-x64.zip
+
 %files
     allele_counts_from_strelka.py /usr/TMB/allele_counts_from_strelka.py 
     #copy in our version of hg19 with the pre-built index. This way no-one can use a different one.
-    hs37d5.fa /usr/TMB/hs37d5.fa
-    hs37d5.fa.amb /usr/TMB/hs37d5.fa.amb
-    hs37d5.fa.ann /usr/TMB/hs37d5.fa.ann
-    hs37d5.fa.bwt /usr/TMB/hs37d5.fa.bwt
-    hs37d5.fa.fai /usr/TMB/hs37d5.fa.fai
-    hs37d5.fa.pac /usr/TMB/hs37d5.fa.pac
-    hs37d5.fa.sa  /usr/TMB/hs37d5.fa.sa
-
+    #needs to be in a separate folder from the binaries so that the folder doesn't get mounted twice.
+    #This might not be an issue with newer versions of singularity.
+    hs37d5.fa /reference/hs37d5.fa
 
 %environment
     export PATH=/usr/TMB:$PATH
