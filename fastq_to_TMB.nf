@@ -129,6 +129,7 @@ process trim_pair {
 process align_reads {
 	tag "$an_id"
 	cpus 48
+	memory "48 GB"
 
 	input:
 		tuple an_id, patient, tissue, file(trim1), file(trim2) from trimmed_reads_ch

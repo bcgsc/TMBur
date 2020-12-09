@@ -1,9 +1,13 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-include {copy_reference; bwa_index_reference; samtools_index_reference; gatk_index_reference; count_fasta_bases; count_CDS_bases} from './fastq_to_TMB_processes.nf'
+include {copy_reference; bwa_index_reference; samtools_index_reference; gatk_index_reference; create_RTG_reference} from './fastq_to_TMB_processes.nf'
+include {count_fasta_bases; count_CDS_bases} from './fastq_to_TMB_processes.nf'
 include {trim_pair; align_reads; sort_bam; merge_bams; mark_duplicates} from './fastq_to_TMB_processes.nf'
-include {MSIsensor2; manta; strelka} from './fastq_to_TMB_processes.nf'
+include {MSIsensor2; manta; strelka; create_pass_vcfs_strelka; rtg_intersect_calls} from './fastq_to_TMB_processes.nf'
+include {annotate_small_variants; create_report} from './fastq_to_TMB_processes.nf'
+include {mutect2_wf; create_split_coords_wf} from './mutect2_workflow.nf'
+
 
 /*
 * pipeline input parameters
@@ -82,14 +86,34 @@ workflow {
     //call all the somatic analyses
     MSIsensor2(bams_for_somatic_ch)
     manta(bams_for_somatic_ch, fai_index, reference_ch) // only works for deep genomes
-    strelka(manta.out[1], fai_index, reference_ch)
- 
-    //GATK
+    strelka(manta.out, fai_index, reference_ch)
+    create_pass_vcfs_strelka(strelka.out)
+    mutect2_wf(bams_for_somatic_ch,
+        reference_ch,
+        dict_index,
+		fai_index)
     //merge Strelka and GATK
+    rtg_intersect_calls(create_pass_vcfs_strelka.out.join(mutect2_wf.out, by: [1,2,3]), RTG_reference)
+
+    //annotate
+    annotate_small_variants(rtg_intersect_calls.out.joined_calls)
+
+    //merge all the tools into one data structure
+    all_results = MSIsensor2.out.join(annotate_small_variants.out.annnotations, by:[1,2,3])
+    
     //produce AF report
+    create_report(base_count_file, CDS_count_file, all_results )
+
     //mutational spectrum
     //panel_foundation_one (laura)
     //QC?
-    //report  
+     
 
+}
+
+//will run at the end of the analysis.
+workflow.onComplete {
+	//final_results_ch.view{ println "[complete] $it"}
+	println "Pipeline $workflow.scriptName completed at: $workflow.complete"
+	println "Execution status: ${ workflow.success ? 'OK' : 'failed' }"
 }
