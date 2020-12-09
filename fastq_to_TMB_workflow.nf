@@ -5,7 +5,7 @@ include {copy_reference; bwa_index_reference; samtools_index_reference; gatk_ind
 include {count_fasta_bases; count_CDS_bases} from './fastq_to_TMB_processes.nf'
 include {trim_pair; align_reads; sort_bam; merge_bams; mark_duplicates} from './fastq_to_TMB_processes.nf'
 include {MSIsensor2; manta; strelka; create_pass_vcfs_strelka; rtg_intersect_calls} from './fastq_to_TMB_processes.nf'
-include {annotate_small_variants; create_report} from './fastq_to_TMB_processes.nf'
+include {annotate_small_variants; create_report; create_signatures} from './fastq_to_TMB_processes.nf'
 include {mutect2_wf; create_split_coords_wf} from './mutect2_workflow.nf'
 
 
@@ -102,9 +102,11 @@ workflow {
     all_results = MSIsensor2.out.join(annotate_small_variants.out.annnotations, by:[1,2,3])
     
     //produce AF report
-    create_report(base_count_file, CDS_count_file, all_results )
+    create_report(base_count_file, CDS_count_file, all_results)
 
-    //mutational spectrum
+    //produce signature results
+    create_signatures(rtg_intersect_calls.out.joined_calls)
+
     //panel_foundation_one (laura)
     //QC?
      

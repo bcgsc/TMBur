@@ -485,6 +485,31 @@ process annotate_small_variants {
 	"""
 }
 
+process create_signatures {
+	tag "${patient}_${T}_${N}"
+	publishDir "${params.out_dir}/${patient}_${T}_${N}/signatures", mode: 'copy'
+	
+	input:
+		tuple val(names), val(patient), val(T), val(N), 
+			path(snv_calls),
+			path(snv_index),
+			path(indel_calls),
+			path(indel_index)
+
+	output:
+		tuple val("SigProfiler"), val(patient), val(T), val(N), 
+			path("mutation_signature_output"), emit: mutsig_output
+		
+	script:
+	"""
+		/usr/TMB/gatk-4.0.10.0/gatk MergeVcfs -I ${snv_calls} -I ${indel_calls} -O all_passed_merged_variants.vcf
+		mkdir vcf_input
+		mv all_passed_merged_variants.vcf vcf_input
+		python3 /usr/TMB/plot_mutation_spectrum.py -v vcf_input -n ${patient}_${T}_${N}
+		mv vcf_input/output ./mutation_signature_output
+	"""
+}
+
 process create_report {
 	tag "${patient}"
 	publishDir "${params.out_dir}/${patient}_${T}_${N}/report", mode: 'copy', overwrite: true
