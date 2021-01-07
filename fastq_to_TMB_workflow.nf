@@ -5,7 +5,7 @@ include {copy_reference; bwa_index_reference; samtools_index_reference; gatk_ind
 include {count_fasta_bases; count_CDS_bases} from './fastq_to_TMB_processes.nf'
 include {trim_pair; align_reads; sort_bam; merge_bams; mark_duplicates} from './fastq_to_TMB_processes.nf'
 include {MSIsensor2; manta; strelka; create_pass_vcfs_strelka; rtg_intersect_calls} from './fastq_to_TMB_processes.nf'
-include {annotate_small_variants; create_report; create_signatures} from './fastq_to_TMB_processes.nf'
+include {annotate_small_variants; create_report; create_signatures; create_panel_report} from './fastq_to_TMB_processes.nf'
 include {mutect2_wf; create_split_coords_wf} from './mutect2_workflow.nf'
 
 
@@ -92,7 +92,8 @@ workflow {
         reference_ch,
         dict_index,
 		fai_index)
-    //merge Strelka and GATK
+        
+    //merge Strelka and GATK SNVs and INDELs
     rtg_intersect_calls(create_pass_vcfs_strelka.out.join(mutect2_wf.out, by: [1,2,3]), RTG_reference)
 
     //annotate
@@ -108,6 +109,8 @@ workflow {
     create_signatures(rtg_intersect_calls.out.joined_calls)
 
     //panel_foundation_one (laura)
+    create_panel_report(base_count_file, CDS_count_file, params.cosmic_vcf, all_results)
+    
     //QC?
      
 

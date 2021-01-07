@@ -173,6 +173,7 @@ process gatk_index_feature {
 }
 
 //split the vcf file into SNVs and INDELs.
+//may omit complex variants that combine SNVs and INDELs
 process split_vcfs_into_SNVs_and_INDELs {
     tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/mutect_snv_indel_split/", mode: 'copy'

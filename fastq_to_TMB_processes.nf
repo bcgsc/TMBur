@@ -1,6 +1,9 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
+//shorthand to run SnpSift in the container
+snpSift="java -jar /usr/TMB/snpEff/SnpSift.jar"
+
 //an ugly way to access the file that is distributed in the container
 process copy_reference {
 	tag "$fasta_name"
@@ -367,8 +370,8 @@ process create_pass_vcfs_strelka {
 
     script:
     """
-        java -Xmx2g -jar /usr/TMB/snpEff/SnpSift.jar filter "(FILTER = 'PASS')"  ${strelka_indels} > strelka_${patient}_${T}_${N}.PASS.indel.vcf
-		java -Xmx2g -jar /usr/TMB/snpEff/SnpSift.jar filter "(FILTER = 'PASS')"  ${strelka_snvs} > strelka_${patient}_${T}_${N}.PASS.snv.vcf 
+        ${snpSift} filter "(FILTER = 'PASS')"  ${strelka_indels} > strelka_${patient}_${T}_${N}.PASS.indel.vcf
+		${snpSift} filter "(FILTER = 'PASS')"  ${strelka_snvs} > strelka_${patient}_${T}_${N}.PASS.snv.vcf 
 		/usr/TMB/rtg-tools-3.11/rtg bgzip strelka_${patient}_${T}_${N}.PASS.indel.vcf 
 		/usr/TMB/rtg-tools-3.11/rtg bgzip strelka_${patient}_${T}_${N}.PASS.snv.vcf 
         /usr/TMB/rtg-tools-3.11/rtg index strelka_${patient}_${T}_${N}.PASS.indel.vcf.gz
@@ -509,6 +512,105 @@ process create_signatures {
 		mv vcf_input/output ./mutation_signature_output
 	"""
 }
+
+
+//Annotations should be already done with SNPEff.
+process create_panel_report {
+	tag "${patient}"
+	publishDir "${params.out_dir}/${patient}_${T}_${N}/report", mode: 'copy', overwrite: true
+	memory '48 GB'
+	
+	input:
+		path(base_count) 
+		path(cds_count)
+		path(cosmic_vcf)
+		tuple val(patient), val(T), val(N), val(dont_use1),
+			path(msi_out),
+			val(dont_use2),
+			path(snv_vcf),
+			path(indel_vcf)
+
+	output:
+		tuple val(patient), val(T), val(N), path("TMB_panel_estimates.txt")
+
+	script:
+	//will miss MNP (multi-nucleotide-polymorphism) counts
+	//Low, MODERATE, HIGH SNPEff impacts are included in the counts
+	if( cosmic_vcf.exists() ) //untested
+	"""
+		#Create files for the later snpEff searches
+		echo "HIGH\nMODERATE\nLOW\n" > impacts.txt
+
+		total_CDS_bases=`cat ${cds_count}`
+		echo "indel file: ${indel_vcf}" > TMB_panel_estimates.txt
+		echo "snv file: ${snv_vcf}" >> TMB_panel_estimates.txt
+
+		#Annotate calls with COSMIC
+		${snpSift} annotate ${cosmic_vcf} ${snv_vcf} > ${snv_vcf.simpleName}.cosmic.vcf
+		${snpSift} annotate ${cosmic_vcf} ${indel_vcf} > ${indel_vcf.simpleName}.cosmic.vcf
+
+		#Count total coding variants
+		coding_SNVs=`${snpSift} filter -s impacts.txt \
+			"(EFF[*].IMPACT in SET[0])" \
+			${snv_vcf.simpleName}.cosmic.vcf | grep -E '^[1234567890XY]{1,2}\\s' | wc -l`
+		coding_INDELs=`${snpSift} filter -s impacts.txt \
+			"(EFF[*].IMPACT in SET[0])" \
+			${indel_vcf.simpleName}.cosmic.vcf | grep -E '^[1234567890XY]{1,2}\\s' | wc -l`
+		mutcount=\$(expr \$coding_SNVs + \$coding_INDELs)
+		printf "Exome SNV TMB: %3.2f\\n" `echo "scale=8; \${mutcount} * 1000000 / \${total_CDS_bases}" | bc` >> TMB_panel_estimates.txt
+
+		#Count coding variants overlapping with the panel space
+		SNV_in_panel=`${snpSift} filter -s impacts.txt -s /usr/TMB/panel_gene_list_20200218.txt \
+			"(EFF[*].IMPACT in SET[0]) && (ANN[*].GENE in SET[1])" \
+			${snv_vcf.simpleName}.cosmic.vcf | \
+			${snpSift} extractFields - CHROM POS ID REF ALT ANN[*].IMPACT ANN[*].GENE | sort -u | grep -v ^CHROM | wc -l`
+		INDEL_in_panel=`${snpSift} filter -s impacts.txt -s /usr/TMB/panel_gene_list_20200218.txt \
+			"(EFF[*].IMPACT in SET[0]) && (ANN[*].GENE in SET[1])" \
+			${indel_vcf.simpleName}.cosmic.vcf | \
+			${snpSift} extractFields - CHROM POS ID REF ALT ANN[*].IMPACT ANN[*].GENE | sort -u | grep -v ^CHROM | wc -l`
+
+		#intersect panel variants with COSMIC annotations
+		COSMIC_SNV_in_panel=`${snpSift} filter -s impacts.txt -s /usr/TMB/panel_gene_list_20200218.txt \
+			"(EFF[*].IMPACT in SET[0] & ANN[*].GENE in SET[1] & ( ID =~ 'COS' ))" \
+			${snv_vcf.simpleName}.cosmic.vcf | \
+			${snpSift} extractFields - CHROM POS ID REF ALT ANN[*].IMPACT ANN[*].GENE | sort -u | grep -v ^CHROM | wc -l`
+		COSMIC_INDEL_in_panel=`${snpSift} filter -s impacts.txt -s /usr/TMB/panel_gene_list_20200218.txt \
+			"(EFF[*].IMPACT in SET[0] & ANN[*].GENE in SET[1] & ( ID =~ 'COS' ) )" \
+			${indel_vcf.simpleName}.cosmic.vcf | \
+			${snpSift} extractFields - CHROM POS ID REF ALT ANN[*].IMPACT ANN[*].GENE | sort -u | grep -v ^CHROM | wc -l`
+
+		#intersect panel variants with COSMIC and TSG gene list
+		TSG_nonsense_SNV_in_panel_not_in_cosmic=`${snpSift} filter -s /usr/TMB/panel_gene_list_20200218.txt -s /usr/TMB/TSG_list.txt \
+			"(EFF[*].EFFECT has 'stop_gained') && (ANN[*].GENE in SET[0]) && (ANN[*].GENE in SET[1]) && ( ID !~ 'COS' )" \
+			${snv_vcf.simpleName}.cosmic.vcf | \
+			${snpSift} extractFields - CHROM POS ID REF ALT ANN[*].IMPACT ANN[*].GENE | sort -u | grep -v ^CHROM | wc -l`
+		TSG_nonsense_INDEL_in_panel_not_in_cosmic=`${snpSift} filter -s /usr/TMB/panel_gene_list_20200218.txt -s /usr/TMB/TSG_list.txt -s impacts.txt \
+			"(EFF[*].EFFECT in SET[2]) && (ANN[*].GENE in SET[0]) && (ANN[*].GENE in SET[1]) && ( ID !~ 'COS' )" \
+			${snv_vcf.simpleName}.cosmic.vcf | \
+			${snpSift} extractFields - CHROM POS ID REF ALT ANN[*].IMPACT ANN[*].GENE | sort -u | grep -v ^CHROM | wc -l`
+
+		#filtered mutation count
+		fm_tmb_mut_count=\$(expr \$SNV_in_panel + \$INDEL_in_panel - \$COSMIC_SNV_in_panel - \$COSMIC_INDEL_in_panel - \$TSG_nonsense_SNV_in_panel_not_in_cosmic - \$TSG_nonsense_INDEL_in_panel_not_in_cosmic)
+
+		# calculate panel tmb after filtering cosmic mutations and tumour suppressor indels
+		panel_size=794514
+		fm_tmb=\$(echo "scale=8; \$fm_tmb_mut_count/\$panel_size*1000000" | bc)
+
+		printf "Coding SNVs in panel: %d\\n" \${SNV_in_panel} >> TMB_panel_estimates.txt  
+		printf "Coding INDELs in panel: %d\\n" \${INDEL_in_panel} >> TMB_panel_estimates.txt  
+		printf "COSMIC SNVs in panel: %d\\n" \${COSMIC_SNV_in_panel} >> TMB_panel_estimates.txt  
+		printf "COSMIC INDELs in panel: %d\\n" \${COSMIC_INDEL_in_panel} >> TMB_panel_estimates.txt  
+		printf "Tumor Supressor Nonsense SNVs not in COSMIC in panel: %d\\n" \${TSG_nonsense_SNV_in_panel_not_in_cosmic} >> TMB_panel_estimates.txt 
+		printf "Tumor Supressor INDELs not in COSMIC in panel: %d\\n" \${TSG_nonsense_INDEL_in_panel_not_in_cosmic} >> TMB_panel_estimates.txt 
+		printf "Panel TMB estimate: %3.2f\\n" \$fm_tmb >> TMB_panel_estimates.txt 
+		
+	"""
+	else
+	"""
+		echo "No panel based counts reported because no COSMIC vcf was supplied" >> TMB_panel_estimates.txt
+	"""
+}
+
 
 process create_report {
 	tag "${patient}"
