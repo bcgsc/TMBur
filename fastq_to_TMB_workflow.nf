@@ -14,6 +14,7 @@ include {mutect2_wf; create_split_coords_wf} from './mutect2_workflow.nf'
 */
 	params.samples_file = "/projects/rcorbettprj2/mutationalBurden/PROFYLE_container/2p0/test_data/samples.csv"
 	params.out_dir = "/projects/rcorbettprj2/mutationalBurden/PROFYLE_container/2p0/test_data/output"
+    params.release = "0_5_0"
 		
 	log.info """\
     TMB estimation pipeline
@@ -44,7 +45,7 @@ workflow {
     fai_index = samtools_index_reference(reference_ch)
     dict_index = gatk_index_reference(reference_ch)
     base_count_file = count_fasta_bases(reference_ch)
-    CDS_count_file = count_CDS_bases(params.annotation)
+    count_CDS_bases(params.annotation)
     RTG_reference = create_RTG_reference(reference_ch)
 
     //preprocess fastq files
@@ -103,13 +104,13 @@ workflow {
     all_results = MSIsensor2.out.join(annotate_small_variants.out.annnotations, by:[1,2,3])
     
     //produce AF report
-    create_report(base_count_file, CDS_count_file, all_results)
+    create_report(base_count_file, count_CDS_bases.out.CDS_size_file, count_CDS_bases.out.CDS_bed, all_results, params.release)
 
     //produce signature results
     create_signatures(rtg_intersect_calls.out.joined_calls)
 
     //panel_foundation_one (laura)
-    create_panel_report(base_count_file, CDS_count_file, params.cosmic_vcf, all_results)
+    create_panel_report(base_count_file, count_CDS_bases.out.CDS_size_file, count_CDS_bases.out.CDS_bed, params.cosmic_vcf, all_results)
     
     //QC?
      
