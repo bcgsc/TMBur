@@ -546,7 +546,6 @@ process create_panel_report {
 	//will miss MNP (multi-nucleotide-polymorphism) counts
 	if( cosmic_vcf.exists() ) //untested
 	"""
-		total_CDS_bases=`cat ${cds_count}`
 		echo "indel file: ${indel_vcf}" > TMB_panel_estimates.txt
 		echo "snv file: ${snv_vcf}" >> TMB_panel_estimates.txt
 
@@ -559,16 +558,16 @@ process create_panel_report {
 				${indel_vcf} > ${indel_vcf.simpleName}_panel.vcf
 			panel_SNV_count=`grep -v ^# ${snv_vcf.simpleName}_panel.vcf | wc -l`
 			panel_INDEL_count=`grep -v ^# ${indel_vcf.simpleName}_panel.vcf | wc -l`
-			printf "SNVs in panel: %3f\\n" \${panel_SNV_count} >> TMB_panel_estimates.txt
-			printf "INDELs in panel : %3f\\n" \${panel_INDEL_count} >> TMB_panel_estimates.txt 	
+			printf "SNVs in panel: %3.2f\\n" \${panel_SNV_count} >> TMB_panel_estimates.txt
+			printf "INDELs in panel : %3.2f\\n" \${panel_INDEL_count} >> TMB_panel_estimates.txt 	
 		 
 		#limit to the CDS of the genes in the panel
 			bedtools intersect -a ${snv_vcf.simpleName}_panel.vcf -b ${cds_bed} -header > ${snv_vcf.simpleName}_panel_CDS.vcf
 			bedtools intersect -a ${indel_vcf.simpleName}_panel.vcf -b ${cds_bed} -header > ${indel_vcf.simpleName}_panel_CDS.vcf
 			panel_CDS_SNV_count=`grep -v ^# ${snv_vcf.simpleName}_panel_CDS.vcf | wc -l`
 			panel_CDS_INDEL_count=`grep -v ^# ${indel_vcf.simpleName}_panel_CDS.vcf | wc -l`
-			printf "SNVs in panel+CDS: %3f\\n" \${panel_CDS_SNV_count} >> TMB_panel_estimates.txt
-			printf "INDELs in panel+CDS : %3f\\n" \${panel_CDS_INDEL_count} >> TMB_panel_estimates.txt 
+			printf "SNVs in panel+CDS: %3.2f\\n" \${panel_CDS_SNV_count} >> TMB_panel_estimates.txt
+			printf "INDELs in panel+CDS : %3.2f\\n" \${panel_CDS_INDEL_count} >> TMB_panel_estimates.txt 
 
 		#Annotate calls with COSMIC
 			${snpSift} annotate ${cosmic_vcf} ${snv_vcf.simpleName}_panel_CDS.vcf > ${snv_vcf.simpleName}_panel_CDS_cosmic.vcf
@@ -579,25 +578,30 @@ process create_panel_report {
 			${snpSift} filter "( ID !~ 'COS' )"  ${indel_vcf.simpleName}_panel_CDS_cosmic.vcf > ${indel_vcf.simpleName}_panel_CDS_cosmic_filt.vcf 
 			panel_CDS_SNV_noCosmic_count=`grep -v ^# ${snv_vcf.simpleName}_panel_CDS_cosmic_filt.vcf | wc -l`
 			panel_CDS_INDEL_noCosmic_count=`grep -v ^# ${indel_vcf.simpleName}_panel_CDS_cosmic_filt.vcf | wc -l`
-			printf "SNVs in panel+CDS-COSMIC: %3f\\n" \${panel_CDS_SNV_noCosmic_count} >> TMB_panel_estimates.txt
-			printf "INDELs in panel+CDS-COSMIC : %3f\\n" \${panel_CDS_INDEL_noCosmic_count} >> TMB_panel_estimates.txt
+			printf "SNVs in panel+CDS-COSMIC: %3.2f\\n" \${panel_CDS_SNV_noCosmic_count} >> TMB_panel_estimates.txt
+			printf "INDELs in panel+CDS-COSMIC : %3.2f\\n" \${panel_CDS_INDEL_noCosmic_count} >> TMB_panel_estimates.txt
 
 		#Take the above (in panel, in CDS, not in COSMIC) and filter for specific TSG variants.
-		# Looking for remaining nonsense SNVs in TSGs or protein changing INDELs
+		# Looking for remaining nonsense SNVs in TSGs or protein interrupting INDELs
 			TSG_nonsense_SNV=`${snpSift} filter -s /usr/TMB/TSG_list.txt \
-				\"(EFF[*].EFFECT has 'stop_gained') && (ANN[*].GENE in SET[0])\" \
+				\"(EFF[*].IMPACT = 'HIGH') &&  (ANN[*].GENE in SET[0]) && (EFF[*].FEATURE = 'transcript') \" \
 				${snv_vcf.simpleName}_panel_CDS_cosmic_filt.vcf | grep -v ^# | wc -l`
 			TSG_protein_INDEL=`${snpSift} filter -s /usr/TMB/TSG_list.txt  \
-				\"(ANN[*].GENE in SET[0]) && ((EFF[*].IMPACT = 'LOW') | (EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH'))\" \
+				\"(ANN[*].GENE in SET[0]) && (EFF[*].IMPACT = 'HIGH') && (EFF[*].FEATURE = 'transcript')\" \
 				${indel_vcf.simpleName}_panel_CDS_cosmic_filt.vcf | grep -v ^# | wc -l`
-			printf "NONSENSE SNVs in panel in TSG list not in COSMIC: %3f\\n" \${TSG_nonsense_SNV} >> TMB_panel_estimates.txt
-			printf "Coding INDELs in panel in TSG list not in COSMIC: %3f\\n" \${TSG_protein_INDEL} >> TMB_panel_estimates.txt
+			printf "High impact SNVs in panel in TSG list not in COSMIC: %3.2f\\n" \${TSG_nonsense_SNV} >> TMB_panel_estimates.txt
+			printf "High impact INDELs in panel in TSG list not in COSMIC: %3.2f\\n" \${TSG_protein_INDEL} >> TMB_panel_estimates.txt
 
 		# calculate panel tmb after filtering cosmic mutations and tumour suppressor indels
-		# Got the panel size estimate from Laura
-			fm_tmb_mut_count=\$(expr \$panel_CDS_SNV_noCosmic_count + \$panel_CDS_INDEL_noCosmic_count - \$TSG_nonsense_SNV - \$TSG_protein_INDEL)
-			panel_size=794514
+			fm_tmb_mut_count=`echo "scale=8; \$panel_CDS_SNV_noCosmic_count + \$panel_CDS_INDEL_noCosmic_count - \$TSG_nonsense_SNV - \$TSG_protein_INDEL" | bc`
+		#Get panel size from reference files
+			java -jar /usr/TMB/snpEff/snpEff.jar genes2bed -cds -f /usr/TMB/panel_gene_list_20200218.txt GRCh37.75 > panel_gene_list_20200218_CDS.bed
+			panel_size=`cat panel_gene_list_20200218_CDS.bed | bedtools sort | bedtools merge | awk '{ print \$3-\$2 }' | paste -sd+ | bc`
+		#Final division and reporting	
+			#panel_size=794514  #number from laura - our number calculated above should be 846493
 			fm_tmb=\$(echo "scale=8; \$fm_tmb_mut_count/\$panel_size*1000000" | bc)
+			printf "Panel CDS bases: %3.2f\\n" \$panel_size >> TMB_panel_estimates.txt
+			printf "Final panel variant count: %3.2f\\n" \$fm_tmb_mut_count >> TMB_panel_estimates.txt
 			printf "Panel TMB estimate: %3.2f\\n" \$fm_tmb >> TMB_panel_estimates.txt 
 		
 	"""
@@ -640,7 +644,7 @@ process create_report {
 		java -jar /usr/TMB/snpEff//SnpSift.jar extractFields ${snv_vcf} GEN[1].AF > AF.csv
 		for i in \$(seq 0 0.1 0.9); do \
 			count=`awk -v var=\$i '{if (\$1 > var && \$1 <= var+0.1 ) print \$1}' AF.csv | wc -l`; 
-			printf "%s-%s %d\\n"  \$i \$(echo \$i + 0.1 | bc) \$count; 
+			printf "%s-%s %3.2f\\n"  \$i \$(echo \$i + 0.1 | bc) \$count; 
 		done > passed_SNV_AF_counts.txt
 
 		java -Xmx16g -jar /usr/TMB/snpEff/SnpSift.jar filter "(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" \
@@ -648,7 +652,7 @@ process create_report {
 			java -jar /usr/TMB/snpEff/SnpSift.jar extractFields - GEN[1].AF > AF_coding.csv
 		for i in \$(seq 0 0.1 0.9); do \
 			count=`awk -v var=\$i '{if (\$1 > var && \$1 <= var+0.1 ) print \$1}' AF_coding.csv | wc -l`; 
-			printf "%s-%s %d\\n"  \$i \$(echo \$i + 0.1 | bc) \$count; 
+			printf "%s-%s %3.2f\\n"  \$i \$(echo \$i + 0.1 | bc) \$count; 
 		done > passed_SNV_coding_AF_counts.txt
 
 		#GENOME WIDE TMB 
@@ -656,9 +660,9 @@ process create_report {
 			total_bases=`cat ${base_count}`
 			total_SNVs=`cat ${snv_vcf} | grep -E '^[1234567890XY]{1,2}\\s' | wc -l`
 			total_Indels=`cat ${indel_vcf} | grep -E '^[1234567890XY]{1,2}\\s' | wc -l`
-			printf "Non-N bases in 1-22,X,Y: %d\\n" \${total_bases} >> TMB_counts.txt 
-			printf "Total genome SNVs: %d\\n" \${total_SNVs} >> TMB_counts.txt  
-			printf "Total genome Indels: %d\\n" \${total_Indels} >> TMB_counts.txt  
+			printf "Non-N bases in 1-22,X,Y: %3.2f\\n" \${total_bases} >> TMB_counts.txt 
+			printf "Total genome SNVs: %3.2f\\n" \${total_SNVs} >> TMB_counts.txt  
+			printf "Total genome Indels: %3.2f\\n" \${total_Indels} >> TMB_counts.txt  
 			printf "Genome SNV TMB: %3.2f\\n" `echo "scale=8; \${total_SNVs} * 1000000 / \${total_bases}" | bc` >> TMB_counts.txt  
 			printf "Genome Indel TMB: %3.2f\\n" `echo "scale=8; \${total_Indels} * 1000000 / \${total_bases}" | bc` >> TMB_counts.txt  
 		
@@ -666,21 +670,21 @@ process create_report {
 			total_CDS_bases=`cat ${cds_count}`
 			total_CDS_SNVs=`bedtools intersect -a ${snv_vcf} -b ${cds_bed} | grep -E '^[1234567890XY]{1,2}\\s' | wc -l`
 			total_CDS_Indels=`bedtools intersect -a ${indel_vcf} -b ${cds_bed} | grep -E '^[1234567890XY]{1,2}\\s' | wc -l`
-			printf "CDS bases in 1-22,X,Y: %d\\n" \${total_CDS_bases} >> TMB_counts.txt
-			printf "CDS SNVs: %d\\n" \${total_CDS_SNVs} >> TMB_counts.txt  
-			printf "CDS Indels: %d\\n" \${total_CDS_Indels} >> TMB_counts.txt
+			printf "CDS bases in 1-22,X,Y: %3.2f\\n" \${total_CDS_bases} >> TMB_counts.txt
+			printf "CDS SNVs: %3.2f\\n" \${total_CDS_SNVs} >> TMB_counts.txt  
+			printf "CDS Indels: %3.2f\\n" \${total_CDS_Indels} >> TMB_counts.txt
 			printf "CDS SNV TMB: %3.2f\\n" `echo "scale=8; \${total_CDS_SNVs} * 1000000 / \${total_CDS_bases}" | bc` >> TMB_counts.txt  
 			printf "CDS Indel TMB: %3.2f\\n" `echo "scale=8; \${total_CDS_Indels} * 1000000 / \${total_CDS_bases}" | bc` >> TMB_counts.txt  
 
 		#CODING/PROTEIN TMB
 			total_protein_SNVs=`${snpSift} filter \
-				"(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" \
+				"((EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')) && (EFF[*].FEATURE = 'transcript')" \
 				${snv_vcf} | grep -E '^[1234567890XY]{1,2}\\s' | wc -l`
   			total_protein_Indels=`${snpSift} filter \
-		  		"(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" \
+		  		"((EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')) && (EFF[*].FEATURE = 'transcript')" \
 				${indel_vcf} | grep -E '^[1234567890XY]{1,2}\\s' | wc -l`
-			printf "Protein SNVs: %d\\n" \${total_protein_SNVs} >> TMB_counts.txt
-			printf "Protein INDELs: %d\\n" \${total_protein_Indels} >> TMB_counts.txt
+			printf "Protein SNVs: %3.2f\\n" \${total_protein_SNVs} >> TMB_counts.txt
+			printf "Protein INDELs: %3.2f\\n" \${total_protein_Indels} >> TMB_counts.txt
 			printf "Protein SNV TMB: %3.2f\\n" `echo "scale=8; \${total_protein_SNVs} * 1000000 / \${total_CDS_bases}" | bc` >> TMB_counts.txt  
 			printf "Protein Indel TMB: %3.2f\\n" `echo "scale=8; \${total_protein_Indels} * 1000000 / \${total_CDS_bases}" | bc` >> TMB_counts.txt  
 
@@ -688,7 +692,7 @@ process create_report {
 			msi_score=`awk 'NR==2 { print \$NF }' ${msi_out}`
     		printf "MSI score: %3.2f\\n" \${msi_score} >> TMB_counts.txt  
 		
-		printf "Report Complete!" >> TMB_counts.txt  
+		printf "Report Complete!\\n" >> TMB_counts.txt  
 	"""
 
 
