@@ -562,8 +562,9 @@ process create_panel_report {
 			printf "INDELs in panel : %3.2f\\n" \${panel_INDEL_count} >> TMB_panel_estimates.txt 	
 		 
 		#limit to the CDS of the genes in the panel
-			bedtools intersect -a ${snv_vcf.simpleName}_panel.vcf -b ${cds_bed} -header > ${snv_vcf.simpleName}_panel_CDS.vcf
-			bedtools intersect -a ${indel_vcf.simpleName}_panel.vcf -b ${cds_bed} -header > ${indel_vcf.simpleName}_panel_CDS.vcf
+			java -jar /usr/TMB/snpEff/snpEff.jar genes2bed -cds -f /usr/TMB/panel_gene_list_20200218.txt GRCh37.75 > panel_gene_list_20200218_CDS.bed
+			bedtools intersect -a ${snv_vcf.simpleName}_panel.vcf -b panel_gene_list_20200218_CDS.bed -header > ${snv_vcf.simpleName}_panel_CDS.vcf
+			bedtools intersect -a ${indel_vcf.simpleName}_panel.vcf -b panel_gene_list_20200218_CDS.bed -header > ${indel_vcf.simpleName}_panel_CDS.vcf
 			panel_CDS_SNV_count=`grep -v ^# ${snv_vcf.simpleName}_panel_CDS.vcf | wc -l`
 			panel_CDS_INDEL_count=`grep -v ^# ${indel_vcf.simpleName}_panel_CDS.vcf | wc -l`
 			printf "SNVs in panel+CDS: %3.2f\\n" \${panel_CDS_SNV_count} >> TMB_panel_estimates.txt
@@ -594,9 +595,10 @@ process create_panel_report {
 
 		# calculate panel tmb after filtering cosmic mutations and tumour suppressor indels
 			fm_tmb_mut_count=`echo "scale=8; \$panel_CDS_SNV_noCosmic_count + \$panel_CDS_INDEL_noCosmic_count - \$TSG_nonsense_SNV - \$TSG_protein_INDEL" | bc`
+		
 		#Get panel size from reference files
-			java -jar /usr/TMB/snpEff/snpEff.jar genes2bed -cds -f /usr/TMB/panel_gene_list_20200218.txt GRCh37.75 > panel_gene_list_20200218_CDS.bed
 			panel_size=`cat panel_gene_list_20200218_CDS.bed | bedtools sort | bedtools merge | awk '{ print \$3-\$2 }' | paste -sd+ | bc`
+		
 		#Final division and reporting	
 			#panel_size=794514  #number from laura - our number calculated above should be 846493
 			fm_tmb=\$(echo "scale=8; \$fm_tmb_mut_count/\$panel_size*1000000" | bc)
