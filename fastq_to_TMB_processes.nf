@@ -559,10 +559,10 @@ process create_panel_report {
 			panel_SNV_count=`grep -v ^# ${snv_vcf.simpleName}_panel.vcf | wc -l`
 			panel_INDEL_count=`grep -v ^# ${indel_vcf.simpleName}_panel.vcf | wc -l`
 			printf "SNVs in panel: %3.2f\\n" \${panel_SNV_count} >> TMB_panel_estimates.txt
-			printf "INDELs in panel : %3.2f\\n" \${panel_INDEL_count} >> TMB_panel_estimates.txt 	
+			printf "INDELs in panel : %3.2f\\n" \${panel_INDEL_count} >> TMB_panel_estimates.txt
 		 
 		#limit to the CDS of the genes in the panel
-			java -jar /usr/TMB/snpEff/snpEff.jar genes2bed -cds -f /usr/TMB/panel_gene_list_20200218.txt GRCh37.75 > panel_gene_list_20200218_CDS.bed
+			java -jar /usr/TMB/snpEff/snpEff.jar genes2bed -cds -f /usr/TMB/panel_gene_list_20200218.txt GRCh37.75 | bedtools sort | bedtools merge > panel_gene_list_20200218_CDS.bed
 			bedtools intersect -a ${snv_vcf.simpleName}_panel.vcf -b panel_gene_list_20200218_CDS.bed -header > ${snv_vcf.simpleName}_panel_CDS.vcf
 			bedtools intersect -a ${indel_vcf.simpleName}_panel.vcf -b panel_gene_list_20200218_CDS.bed -header > ${indel_vcf.simpleName}_panel_CDS.vcf
 			panel_CDS_SNV_count=`grep -v ^# ${snv_vcf.simpleName}_panel_CDS.vcf | wc -l`
@@ -583,7 +583,7 @@ process create_panel_report {
 			printf "INDELs in panel+CDS-COSMIC : %3.2f\\n" \${panel_CDS_INDEL_noCosmic_count} >> TMB_panel_estimates.txt
 
 		#Take the above (in panel, in CDS, not in COSMIC) and filter for specific TSG variants.
-		# Looking for remaining nonsense SNVs in TSGs or protein interrupting INDELs
+		#Looking for remaining nonsense SNVs in TSGs or protein interrupting INDELs
 			TSG_nonsense_SNV=`${snpSift} filter -s /usr/TMB/TSG_list.txt \
 				\"(EFF[*].IMPACT = 'HIGH') &&  (ANN[*].GENE in SET[0]) && (EFF[*].FEATURE = 'transcript') \" \
 				${snv_vcf.simpleName}_panel_CDS_cosmic_filt.vcf | grep -v ^# | wc -l`
@@ -593,7 +593,7 @@ process create_panel_report {
 			printf "High impact SNVs in panel in TSG list not in COSMIC: %3.2f\\n" \${TSG_nonsense_SNV} >> TMB_panel_estimates.txt
 			printf "High impact INDELs in panel in TSG list not in COSMIC: %3.2f\\n" \${TSG_protein_INDEL} >> TMB_panel_estimates.txt
 
-		# calculate panel tmb after filtering cosmic mutations and tumour suppressor indels
+		#calculate panel tmb after filtering cosmic mutations and tumour suppressor indels
 			fm_tmb_mut_count=`echo "scale=8; \$panel_CDS_SNV_noCosmic_count + \$panel_CDS_INDEL_noCosmic_count - \$TSG_nonsense_SNV - \$TSG_protein_INDEL" | bc`
 		
 		#Get panel size from reference files

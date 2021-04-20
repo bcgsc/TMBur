@@ -1,3 +1,15 @@
 PROFYLE_TMB.sif
 .fastq_to_TMB.nf.swp
 .gitignore
+POG_tests.csv
+PRO-00319.csv
+pog_test_libs.csv
+samples.csv
+samples_dontuse.csv
+samples_new.csv
+samples_subset.csv
+exome_panel_TMB.sh
+POG1188.csv
+FM_comparison_tests.csv
+samples.40M.csv
+samples_COLO829.csv

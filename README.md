@@ -21,6 +21,7 @@ The container and workflow leverage the following bioinformatics tools for analy
 + [Strelka2] (https://github.com/Illumina/strelka)
 + [MSIsensor2] (https://github.com/niu-lab/msisensor2)
 + [SnpEff] (https://pcingola.github.io/SnpEff/)
++ [GATK] (https://gatk.broadinstitute.org/hc/en-us)
 
   
 &nbsp;  
@@ -77,6 +78,9 @@ head node and if you want to use a specific partition on your cluster you need t
 `queue` appropriately. All of the available executors with instructions for what to put in the   
 `nextflow.config` file are here: (https://www.nextflow.io/docs/latest/executor.html)   
   
+To run any of hte panel estiamtes for TMB a VCF containing known COSMIC variants must be supplied.
+This is not distributed inside the container in order to comply with COSMIC licensing rules.
+
 **To run the pipeline you can start with this command**:  
 ```
 nextflow run fastq_to_TMB.nf   
@@ -116,15 +120,34 @@ Field | Comment
 ----- | -------
  Non-N bases in 1-22,X,Y |   Count of the bases used as the whole genome calculation denominator
  CDS bases in 1-22,X,Y |      Count of the unique CDS bases used in the coding calculation denominator
- Total genome SNVs |          Number of passed SNVs called by Strelka 2
- xTotal genome Indels |        Number of passed Indels called by Strelka 2
- Coding SNVs |                 Number of passed Coding SNVs called by Strelka 2
- Coding Indels |               Number of passed Coding Indels called by Strelka 2
+ Total genome SNVs |          Number of passed SNVs called by both Strelka 2 and Mutect 2
+ xTotal genome Indels |        Number of passed Indels called by both Strelka 2 and Mutect 2
+ Coding SNVs |                 Number of passed Coding SNVs called by both Strelka 2 and Mutect 2
+ Coding Indels |               Number of passed Coding Indels called by both Strelka 2 and Mutect 2
  Genome SNV TMB |              total_SNVs * 1000000 / total_bases
  Genome Indel TMB |            total_Indels * 1000000 / total_bases
  Coding SNV TMB |              coding_SNVs * 1000000 / CDS_bases
  Coding Indel TMB |           coding_Indels * 1000000 / CDS_bases
  MSI score |                   Fraction of sites reported as MSI by MSIsensor2
+
+ There will also be a file called `TMB_panel_estimates.txt` in which the same variant calls from above are used, but the report is limited to coordinates
+ of a pseudo-commercial panel.  All counts use the intersection of Strelka 2 and Mutect 2 calls.  The cosmic related counts are only valid if
+ a COSMIC vcf is provided in the config file.
+
+ Field | Comment
+ ----- | -------
+ SNVs in panel | Count of SNVs overlapping panel space
+ INDELs in panel | Count of INDELs overlapping panel space
+ SNVs in panel+CDS | Count of SNVs overlapping panel space and in CDS
+ INDELs in panel+CDS | Count of INDELs overlapping panel space and in CDS
+ SNVs in panel+CDS-COSMIC | Count of SNVs overlapping panel space, in CDS, but not in COSMIC
+ INDELs in panel+CDS-COSMIC | Count of INDELs overlapping panel space, in CDS, but not in COSMIC
+ High impact SNVs in panel in TSG list not in COSMIC | Count of High Impact SNVs (SNPEff annotation) in known tumour suppressors and not in COSMIC
+ High impact INDELs in panel in TSG list not in COSMIC | Count of High Impact INDELs (SNPEff annotation) in known tumour suppressors and not in COSMIC
+ Panel CDS bases: 846493.00 | Total CDS coordinate space
+ Final panel variant count: 0.00 | Count of variants to use for TMB calculation
+ Panel TMB estimate: 0.00 |  Number to use for analysis
+
   
 &nbsp;  
 **BETA**  Variant Allele Fractions
