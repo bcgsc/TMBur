@@ -4,7 +4,7 @@ In order to harmonize Tumour Mutation Burden (TMB) estimates across whole genome
 a unified analysis pipepline was desired to go from fastq files to TMB estimates using  
 software that can be deployed to all locations.
 
-**To ensure reproducibility the current version uses the hs37d5 reference with ens75 annotations and cannot be changed**
+To ensure reproducibility the current version uses the hs37d5 reference with ens75 annotations and cannot be changed
 
 This project uses the following technologies to make the code reprodicible and portable:
 
