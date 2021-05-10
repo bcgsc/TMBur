@@ -18,6 +18,8 @@ The container and workflow leverage the following bioinformatics tools for analy
 + [sambamba] (<https://github.com/biod/sambamba)>
 + [Manta] (<https://github.com/Illumina/manta)>
 + [Strelka2] (<https://github.com/Illumina/strelka)>
++ [Mutect2] (<https://gatk.broadinstitute.org/hc/en-us/articles/360037593851-Mutect2>)
++ [RTGTools] (<https://github.com/RealTimeGenomics/rtg-tools>)
 + [MSIsensor2] (<https://github.com/niu-lab/msisensor2)>
 + [SnpEff] (<https://pcingola.github.io/SnpEff/)>
 
