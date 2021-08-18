@@ -129,14 +129,14 @@ Field | Comment
 ----- | -------
  Non-N bases in 1-22,X,Y |   Count of the bases used as the whole genome calculation denominator
  CDS bases in 1-22,X,Y |      Count of the unique CDS bases used in the coding calculation denominator
- Total genome SNVs |          Number of passed SNVs called by Strelka 2
- xTotal genome Indels |        Number of passed Indels called by Strelka 2
- Coding SNVs |                 Number of passed Coding SNVs called by Strelka 2
- Coding Indels |               Number of passed Coding Indels called by Strelka 2
- Genome SNV TMB |              total_SNVs * 1000000 / total_bases
- Genome Indel TMB |            total_Indels * 1000000 / total_bases
- Coding SNV TMB |              coding_SNVs * 1000000 / CDS_bases
- Coding Indel TMB |           coding_Indels * 1000000 / CDS_bases
+ Total genome SNVs |          Number of passed SNVs called in 1-22,X,Y by both Strelka 2 and Mutect 2
+ Total genome Indels |        Number of passed Indels called in 1-22,X,Y by both Strelka 2 and Mutect 2
+ Coding SNVs |                 Number of passed Coding SNVs called by both Strelka 2 and Mutect 2
+ Coding Indels |               Number of passed Coding Indels called by both Strelka 2 and Mutect 2
+ Genome SNV TMB |               Total genome SNVs * 1000000 / Non-N bases in 1-22,X,Y
+ Genome Indel TMB |            Total genome Indels * 1000000 / Non-N bases in 1-22,X,Y
+ Coding SNV TMB |               Coding SNVs * 1000000 / CDS bases in 1-22,X,Y
+ Coding Indel TMB |            Coding Indels * 1000000 / CDS bases in 1-22,X,Y
  MSI score |                   Fraction of sites reported as MSI by MSIsensor2
   
 &nbsp;  
