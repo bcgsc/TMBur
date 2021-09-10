@@ -27,7 +27,7 @@ The container and workflow leverage the following bioinformatics tools for analy
 
 ## Getting started
 
-### clone the repository
+### Clone the Repository
 
 If you don't yet have the code on your network you can clone this repo to your filesystem:
 
