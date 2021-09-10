@@ -27,6 +27,12 @@ The container and workflow leverage the following bioinformatics tools for analy
 
 ## Getting started
 
+### clone the repository
+
+If you don't yet have the code on your network you can clone this repo to your filesystem:
+
+`git clone https://github.com/bcgsc/TMBur.git`
+
 ### Install Nextflow
 
 First, you need to be able to run nextflow.  Fortunately, it is easy to install:  
