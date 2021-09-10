@@ -1,4 +1,6 @@
-# WGS_TMB
+![TMBur_image](./TMB2.png)
+
+# TMBur - Tumour Mutation Burden 
 
 In order to harmonize Tumour Mutation Burden (TMB) estimates across whole genome sequencing sites,  
 a unified analysis pipepline was desired to go from fastq files to TMB estimates using  
