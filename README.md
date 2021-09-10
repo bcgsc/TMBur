@@ -93,7 +93,7 @@ head node and if you want to use a specific partition on your cluster you need t
 **To run the pipeline you can start with this command**:  
 
 ```
-nextflow run fastq_to_TMB.nf
+nextflow run TMBur.nf
     --samples_file /path/to/samples.csv
     --out_dir ./TMB_out  
 ```
