@@ -131,7 +131,8 @@ folder before cleaning up.*
 
 ## Output
 
-The output folder, with name format `sample_tumour_normal` will contain a file named `TMB_counts.txt` where
+The output folder, with name format `sample_tumour_normal` where `sample`, `tumour`, and `normal` come from
+variables listed in your provided .csv file.   This folder will contain a file named `TMB_counts.txt` where
 the following will be reported:
 
 Field | Comment
