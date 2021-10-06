@@ -96,6 +96,7 @@ head node and if you want to use a specific partition on your cluster you need t
 nextflow run TMBur.nf
     --samples_file /path/to/samples.csv
     --out_dir ./TMB_out  
+    -profile hg19
 ```
 
 `--out_dir` will be where the final results are copied.   During the run a folder called `work`  
