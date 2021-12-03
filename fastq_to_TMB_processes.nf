@@ -165,7 +165,7 @@ process sort_bam {
 
 	script:
 	"""
-		sambamba sort --tmpdir . ${bam_file}
+		/usr/TMB/samtools sort -@ 10 -T . -o ${bam_file.baseName}.sorted.bam ${bam_file}
 	"""
 }
 
