@@ -65,6 +65,8 @@ process split_reference {
     """
         /usr/TMB/gatk-4.0.10.0/gatk PreprocessIntervals -R ${reference_fa} -O ${reference_fa.baseName}_${bin_size}.ilist --bin-length ${bin_size} --padding 0
         /usr/TMB/gatk-4.0.10.0/gatk IntervalListToBed -I ${reference_fa.baseName}_${bin_size}.ilist -O ${reference_fa.baseName}_${bin_size}.bed
+        grep -v hs37d5 ${reference_fa.baseName}_${bin_size}.bed > tmp.tmp
+        mv tmp.tmp ${reference_fa.baseName}_${bin_size}.bed
     """
 }
 

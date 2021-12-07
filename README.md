@@ -172,5 +172,5 @@ one would get in sequenced panel data.  The important number in this report is o
 
 ## Acknowledgements
 
-This project is part PROFYLE
+This project is supported in part by PROFYLE
 <https://www.tfri.ca/profyle>
