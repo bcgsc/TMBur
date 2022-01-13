@@ -8,12 +8,13 @@ software that can be deployed to all locations.
 
 To ensure reproducibility the current version uses the hs37d5 reference with ens75 annotations and cannot be changed
 
-This project uses the following technologies to make the code reprodicible and portable:
+This project requires the following tools to be installed on your system:
 
 + [nextflow] (<https://www.nextflow.io/)>
 + [singularity] <https://sylabs.io/singularity/>
 
-The container and workflow leverage the following bioinformatics tools for analysis:
+The workflow leverages the following bioinformatics tools for analysis.  These are installed in the container 
+that will be pulled at run time:
 
 + [fastp] (<https://github.com/OpenGene/fastp)>
 + [BWA] (<https://github.com/lh3/bwa)>
