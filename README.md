@@ -10,8 +10,8 @@ To ensure reproducibility the current version uses the hs37d5 reference with ens
 
 This project requires the following tools to be installed on your system:
 
-+ [nextflow] (<https://www.nextflow.io/)>
-+ [singularity] <https://sylabs.io/singularity/>
++ [nextflow (version 20.10.0 tested, anything newer should work)] (<https://www.nextflow.io/)>
++ [singularity] (<https://sylabs.io/singularity/>)
 
 The workflow leverages the following bioinformatics tools for analysis.  These are installed in the container 
 that will be pulled at run time:
