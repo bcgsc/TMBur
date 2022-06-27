@@ -526,6 +526,7 @@ process create_signatures {
 process create_panel_report {
 	tag "${patient}"
 	publishDir "${params.out_dir}/${patient}_${T}_${N}/report", mode: 'copy', overwrite: true
+	errorStrategy 'ignore' // occasionally there are zero variants, creating a div-by-0 error below.
 	memory '48 GB'
 	
 	input:
