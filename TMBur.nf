@@ -14,7 +14,7 @@ include {mutect2_wf; create_split_coords_wf} from './mutect2_workflow.nf'
 */
 	params.samples_file = "/projects/rcorbettprj2/mutationalBurden/PROFYLE_container/2p0/test_data/samples.csv"
 	params.out_dir = "/projects/rcorbettprj2/mutationalBurden/PROFYLE_container/2p0/test_data/output"
-    params.release = "2.2.5"
+    params.release = "2.2.6"
 		
 	log.info """\
     TMB estimation pipeline
