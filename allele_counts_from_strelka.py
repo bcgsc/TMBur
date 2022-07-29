@@ -1,30 +1,23 @@
 #!/usr/bin/env python
 # coding:utf-8
 # Author:  Richard Corbett
-# Purpose: Split the Strelka SNV file into smaller files split by AF range.
+# Purpose: Split the Strelka SNV file into smaller files split by af range.
 # Created: 19/08/2020
-
-from optparse import OptionParser
-import sys
 import os
-import re
-import subprocess
-import fnmatch
-
-usage = " %prog -v passed.somatic.vcf "
+import sys
+from optparse import OptionParser
 
 
 def main():
-
-    parser = OptionParser(usage)
+    parser = OptionParser(" %prog -v passed.somatic.vcf ")
     parser.add_option(
         "-v", dest="vcfFile", action="store", type="string", help="path to strelka vcf file."
     )
 
     # get at the arguments
-    (options, args) = parser.parse_args()
+    options, _ = parser.parse_args()
     vcfFile = options.vcfFile
-    if vcfFile == None:
+    if vcfFile is None:
         parser.print_help()
         sys.exit()
 
@@ -80,56 +73,58 @@ def main():
             print >> af_0p9_0p95_file, line.rstrip()
             print >> af_0p95_1p0_file, line.rstrip()
         else:
-            AF = calculate_af(line)
-            if AF >= 0 and AF < 0.05:
+            af = calculate_af(line)
+            if af >= 0 and af < 0.05:
                 print >> af_0p0_0p05_file, line.rstrip()
-            if AF >= 0.05 and AF < 0.1:
+            elif af >= 0.05 and af < 0.1:
                 print >> af_0p05_0p1_file, line.rstrip()
-            if AF >= 0.1 and AF < 0.15:
+            elif af >= 0.1 and af < 0.15:
                 print >> af_0p1_0p15_file, line.rstrip()
-            if AF >= 0.15 and AF < 0.2:
+            elif af >= 0.15 and af < 0.2:
                 print >> af_0p15_0p2_file, line.rstrip()
-            if AF >= 0.2 and AF < 0.25:
+            elif af >= 0.2 and af < 0.25:
                 print >> af_0p2_0p25_file, line.rstrip()
-            if AF >= 0.25 and AF < 0.3:
+            elif af >= 0.25 and af < 0.3:
                 print >> af_0p25_0p3_file, line.rstrip()
-            if AF >= 0.3 and AF < 0.35:
+            elif af >= 0.3 and af < 0.35:
                 print >> af_0p3_0p35_file, line.rstrip()
-            if AF >= 0.35 and AF < 0.4:
+            elif af >= 0.35 and af < 0.4:
                 print >> af_0p35_0p4_file, line.rstrip()
-            if AF >= 0.4 and AF < 0.45:
+            elif af >= 0.4 and af < 0.45:
                 print >> af_0p4_0p45_file, line.rstrip()
-            if AF >= 0.45 and AF < 0.5:
+            elif af >= 0.45 and af < 0.5:
                 print >> af_0p45_0p5_file, line.rstrip()
-            if AF >= 0.5 and AF < 0.55:
+            elif af >= 0.5 and af < 0.55:
                 print >> af_0p5_0p55_file, line.rstrip()
-            if AF >= 0.55 and AF < 0.6:
+            elif af >= 0.55 and af < 0.6:
                 print >> af_0p55_0p6_file, line.rstrip()
-            if AF >= 0.6 and AF < 0.65:
+            elif af >= 0.6 and af < 0.65:
                 print >> af_0p6_0p65_file, line.rstrip()
-            if AF >= 0.65 and AF < 0.7:
+            elif af >= 0.65 and af < 0.7:
                 print >> af_0p65_0p7_file, line.rstrip()
-            if AF >= 0.7 and AF < 0.75:
+            elif af >= 0.7 and af < 0.75:
                 print >> af_0p7_0p75_file, line.rstrip()
-            if AF >= 0.75 and AF < 0.8:
+            elif af >= 0.75 and af < 0.8:
                 print >> af_0p75_0p8_file, line.rstrip()
-            if AF >= 0.8 and AF < 0.85:
+            elif af >= 0.8 and af < 0.85:
                 print >> af_0p8_0p85_file, line.rstrip()
-            if AF >= 0.85 and AF < 0.9:
+            elif af >= 0.85 and af < 0.9:
                 print >> af_0p85_0p9_file, line.rstrip()
-            if AF >= 0.9 and AF < 0.95:
+            elif af >= 0.9 and af < 0.95:
                 print >> af_0p9_0p95_file, line.rstrip()
-            if AF >= 0.95 and AF <= 1.0:  # this last one includes 1.0
+            elif af >= 0.95 and af <= 1.0:  # this last one includes 1.0
                 print >> af_0p95_1p0_file, line.rstrip()
 
 
-# Based on the manual from Strelka, AF can be calculated as:
-# refCounts = Value of FORMAT column $REF + “U” (e.g. if REF="A" then use the value in FOMRAT/AU)
-# altCounts = Value of FORMAT column $ALT + “U” (e.g. if ALT="T" then use the value in FOMRAT/TU)
-# tier1RefCounts = First comma-delimited value from $refCounts
-# tier1AltCounts = First comma-delimited value from $altCounts
-# Somatic allele freqeuncy is $tier1AltCounts / ($tier1AltCounts + $tier1RefCounts)
 def calculate_af(line):
+    """
+    Based on the manual from Strelka, af can be calculated as:
+    refCounts = Value of FORMAT column $REF + “U” (e.g. if REF="A" then use the value in FOMRAT/AU)
+    altCounts = Value of FORMAT column $ALT + “U” (e.g. if ALT="T" then use the value in FOMRAT/TU)
+    tier1RefCounts = First comma-delimited value from $refCounts
+    tier1AltCounts = First comma-delimited value from $altCounts
+    Somatic allele freqeuncy is $tier1AltCounts / ($tier1AltCounts + $tier1RefCounts)
+    """
     base_pos = {"A": 0, "C": 1, "G": 2, "T": 3}
 
     tokens = line.split("\t")
@@ -141,8 +136,9 @@ def calculate_af(line):
     base_counts = tumour_counts.split(":")[4:]
     alt_t1_count = float(base_counts[base_pos[alt_base]].split(",")[0])
     ref_t1_count = float(base_counts[base_pos[ref_base]].split(",")[0])
-    AF = alt_t1_count / (alt_t1_count + ref_t1_count)
-    return AF
+    af = alt_t1_count / (alt_t1_count + ref_t1_count)
+
+    return af
 
 
 if __name__ == "__main__":

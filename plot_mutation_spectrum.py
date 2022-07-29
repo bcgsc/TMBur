@@ -1,19 +1,17 @@
+#!/usr/bin/env python
 # Author:  Richard Corbett
 # coding:utf-8
 # Purpose: Run mutation spectrum code to create figures
 # Created: 07/12/2020
 # Requires: SigProfilerMatrixGenerator and SigProfilerPlotting
-from SigProfilerMatrixGenerator import install as genInstall
-from SigProfilerMatrixGenerator.scripts import SigProfilerMatrixGeneratorFunc as matGen
-import sigProfilerPlotting as sigPlt
-from sigProfilerPlotting import sample_portrait as sP
+"""
+This short program will run the mutation spectrum plotting routines available from https://github.com/AlexandrovLab/SigProfilerPlotting
+"""
 import argparse
 import os
 import sys
 
-# Define the program description
-text = """This short program will run the mutation spectrum plotting routines available from
-https://github.com/AlexandrovLab/SigProfilerPlotting"""
+from SigProfilerMatrixGenerator.scripts import SigProfilerMatrixGeneratorFunc as matGen
 
 
 def main():
@@ -31,7 +29,7 @@ def main():
 
     # get at the arguments
     args = parser.parse_args()
-    if args.vcf_file_folder == None or not os.path.exists(args.vcf_file_folder):
+    if args.vcf_file_folder is None or not os.path.exists(args.vcf_file_folder):
         parser.print_help()
         sys.exit()
 
