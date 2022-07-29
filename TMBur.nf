@@ -45,9 +45,9 @@ include {
 /*
 * pipeline input parameters
 */
-params.samples_file = "/projects/rcorbettprj2/mutationalBurden/PROFYLE_container/2p0/test_data/samples.csv"
-params.out_dir = "/projects/rcorbettprj2/mutationalBurden/PROFYLE_container/2p0/test_data/output"
-params.release = "2.2.5"
+params.samples_file = '/projects/rcorbettprj2/mutationalBurden/PROFYLE_container/2p0/test_data/samples.csv'
+params.out_dir = '/projects/rcorbettprj2/mutationalBurden/PROFYLE_container/2p0/test_data/output'
+params.release = '2.2.5'
 
 log.info """\
 TMB estimation pipeline

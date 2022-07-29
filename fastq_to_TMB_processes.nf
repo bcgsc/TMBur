@@ -67,7 +67,7 @@ process create_RTG_reference {
 		path(fasta)
 
 	output:
-        path("SDF")
+        path('SDF')
 
 	script:
 		"""
@@ -83,7 +83,7 @@ process count_fasta_bases {
 		path(fasta)
 
 	output:
-		path("base_count.txt")
+		path('base_count.txt')
 
 	script:
 		"""
@@ -101,8 +101,8 @@ process count_CDS_bases {
 		val(anno)
 
 	output:
-		path("CDS_size.txt"), emit: CDS_size_file
-		path("CDS.bed"), emit: CDS_bed
+		path('CDS_size.txt'), emit: CDS_size_file
+		path('CDS.bed'), emit: CDS_bed
 
 	script:
 		"""
@@ -144,7 +144,7 @@ process trim_pair {
 process align_reads {
 	tag "$an_id"
 	cpus 48
-	memory "48 GB"
+	memory '48 GB'
 
 	input:
 		tuple val(an_id), val(patient), val(tissue), path(trim1), path(trim2)
@@ -199,7 +199,7 @@ process merge_bams {
 process mark_duplicates {
 	tag "${patient}_${tissue}"
 	publishDir "${params.out_dir}/bams/${patient}_bams"
-	memory "128 GB"
+	memory '128 GB'
 	cpus 8
 
 	input:
@@ -237,7 +237,7 @@ process MSIsensor2 {
 			path(N_bai)
 
 	output:
-		tuple val("msisensor2"),
+		tuple val('msisensor2'),
 			val(patient),
 			val(T),
 			val(N),
@@ -276,7 +276,7 @@ process manta {
 		path(reference)
 
 	output:
-		tuple val("Manta"),
+		tuple val('Manta'),
 			val(patient),
 			val(T),
 			path(T_bam),
@@ -340,7 +340,7 @@ process strelka {
 		path(reference)
 
 	output:
-		tuple val("Strelka2"),
+		tuple val('Strelka2'),
 			val(patient),
 			val(T),
 			val(N),
@@ -416,7 +416,7 @@ process rtg_intersect_calls {
    	tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/variant_intersect", mode: 'copy'
 	cpus 10
-	memory "16 GB"
+	memory '16 GB'
 
     input:
 		tuple val(patient),
@@ -435,7 +435,7 @@ process rtg_intersect_calls {
 		path(rtg_reference)
 
     output:
-        tuple val("intersected_variants"),
+        tuple val('intersected_variants'),
 			val(patient),
 			val(T),
 			val(N),
@@ -451,7 +451,7 @@ process rtg_intersect_calls {
 			path("${patient}_${T}_${N}_indel_strelka_only.vcf.gz.tbi"),
 			path("${patient}_${T}_${N}_indel_mutect_only.vcf.gz.tbi"),
 			path("${patient}_${T}_${N}_indel_both.vcf.gz.tbi"), emit: all_calls
-		tuple val("intersected_variants"),
+		tuple val('intersected_variants'),
 			val(patient),
 			val(T),
 			val(N),
@@ -513,13 +513,13 @@ process annotate_small_variants {
 			path(indel_index)
 
 	output:
-		tuple val("snpEff"),
+		tuple val('snpEff'),
 			val(patient),
 			val(T),
 			val(N),
 			path("${snv_calls.baseName}.snpEff.vcf"),
 			path("${indel_calls.baseName}.snpEff.vcf"), emit: annnotations
-		tuple val("snpEff"),
+		tuple val('snpEff'),
 			val(patient),
 			val(T),
 			val(N),
@@ -556,11 +556,11 @@ process create_signatures {
 			path(indel_index)
 
 	output:
-		tuple val("SigProfiler"),
+		tuple val('SigProfiler'),
 			val(patient),
 			val(T),
 			val(N),
-			path("mutation_signature_output"), emit: mutsig_output
+			path('mutation_signature_output'), emit: mutsig_output
 
 	script:
 		"""
@@ -601,7 +601,7 @@ process create_panel_report {
 			path(indel_vcf)
 
 	output:
-		tuple val(patient), val(T), val(N), path("TMB_panel_estimates.txt")
+		tuple val(patient), val(T), val(N), path('TMB_panel_estimates.txt')
 
 	script:
 		// will miss MNP (multi-nucleotide-polymorphism) counts
@@ -710,9 +710,9 @@ process create_report {
 		tuple val(patient),
 			val(T),
 			val(N),
-			path("TMB_counts.txt"),
-			path("passed_SNV_AF_counts.txt"),
-			path("passed_SNV_coding_AF_counts.txt")
+			path('TMB_counts.txt'),
+			path('passed_SNV_AF_counts.txt'),
+			path('passed_SNV_coding_AF_counts.txt')
 
 	script:
 		"""

@@ -204,7 +204,7 @@ process split_vcfs_into_SNVs_and_INDELs {
         tuple val(patient), val(T), val(N), path(vcf_file), path(vcf_index)
 
     output:
-        tuple val("Mutect2"),
+        tuple val('Mutect2'),
         val(patient),
         val(T),
         val(N),
