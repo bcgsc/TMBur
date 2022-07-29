@@ -64,7 +64,7 @@ workflow {
     // load in the samples file
     samples = Channel
         .fromPath(params.samples_file)
-        .splitCsv(header:true)
+        .splitCsv(header: true)
         .map{ row-> tuple(file(row.read1).baseName, row.patient, row.tissue, file(row.read1), file(row.read2)) }
 
     // print out the CSV data
@@ -90,7 +90,7 @@ workflow {
     // merge + dupmark
     // split into 2 channels, one for merging bams, the other uses bams from one
     // fastq pair
-    bam_lists = sort_bam.out.groupTuple(by:[0, 1]).branch {
+    bam_lists = sort_bam.out.groupTuple(by: [0, 1]).branch {
         single: it[3].size() <= 1
         multiple: it[3].size() > 1
     }
@@ -132,7 +132,7 @@ workflow {
     annotate_small_variants(rtg_intersect_calls.out.joined_calls)
 
     // merge all the tools into one data structure
-    all_results = MSIsensor2.out.join(annotate_small_variants.out.annnotations, by:[1, 2, 3])
+    all_results = MSIsensor2.out.join(annotate_small_variants.out.annnotations, by: [1, 2, 3])
 
     // produce AF report
     create_report(base_count_file, count_CDS_bases.out.CDS_size_file, count_CDS_bases.out.CDS_bed, all_results, params.release)

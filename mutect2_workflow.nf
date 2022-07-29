@@ -63,7 +63,7 @@ workflow create_split_coords_wf {
 		// set up the coordinate ranges
 		split_bed = split_reference(reference_ch, dict_index, fai_index, gatk_bin_size)
 		bed_entries = split_bed
-			.splitCsv(sep:"\t", header:['chr', 'start', 'end', 'NA1', 'NA2', 'NA3'])
+			.splitCsv(sep: "\t", header: ['chr', 'start', 'end', 'NA1', 'NA2', 'NA3'])
 			.map{row  -> tuple(row.chr, row.start, row.end)}
 	emit:
 		bed_entries

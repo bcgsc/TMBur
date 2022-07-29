@@ -219,7 +219,7 @@ process mark_duplicates {
 			--hash-table-size 5000000 \
 			--overflow-list-size 5000000 \
 			--io-buffer-size 1024 ${bam_file} ${bam_file.baseName}.dup.bam
-	"""
+		"""
 }
 
 process MSIsensor2 {
