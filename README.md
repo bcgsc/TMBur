@@ -8,20 +8,20 @@ To ensure reproducibility the current version uses the hs37d5 reference with ens
 
 This project requires the following tools to be installed on your system:
 
-+ nextflow (version 20.10.0 tested, anything newer should work) (<https://www.nextflow.io/)>
-+ singularity (<https://sylabs.io/singularity/>)
++ [nextflow](https://www.nextflow.io/) (version 20.10.0 tested, anything newer should work)
++ [singularity](https://sylabs.io/singularity/)
 
 The workflow leverages the following bioinformatics tools for analysis. These are installed in the container that will be pulled at run time:
 
-+ fastp (<https://github.com/OpenGene/fastp)>
-+ BWA (<https://github.com/lh3/bwa)>
-+ sambamba (<https://github.com/biod/sambamba)>
-+ Manta (<https://github.com/Illumina/manta)>
-+ Strelka2 (<https://github.com/Illumina/strelka)>
-+ Mutect2 (<https://gatk.broadinstitute.org/hc/en-us/articles/360037593851-Mutect2>)
-+ RTGTools (<https://github.com/RealTimeGenomics/rtg-tools>)
-+ MSIsensor2 (<https://github.com/niu-lab/msisensor2)>
-+ SnpEff (<https://pcingola.github.io/SnpEff/)>
++ [fastp](https://github.com/OpenGene/fastp)
++ [BWA](https://github.com/lh3/bwa)
++ [sambamba](https://github.com/biod/sambamba)
++ [Manta](https://github.com/Illumina/manta)
++ [Strelka2](https://github.com/Illumina/strelka)
++ [Mutect2](https://gatk.broadinstitute.org/hc/en-us/articles/360037593851-Mutect2)
++ [RTGTools](https://github.com/RealTimeGenomics/rtg-tools)
++ [MSIsensor2](https://github.com/niu-lab/msisensor2)
++ [SnpEff](https://pcingola.github.io/SnpEff/)
 
 The `plot_mutation_spectrum.py` scripts requires `SigProfilerMatrixGenerator` to run. This can be installed by running:
 
@@ -41,7 +41,7 @@ git clone https://github.com/bcgsc/TMBur.git
 
 ### Install Nextflow
 
-First, you need to be able to run nextflow. Fortunately, it is easy to install: [with details here] (<https://www.nextflow.io/>), but if you already have java 1.8 installed you can just cd to the folder where you want to install it and run `curl -s https://get.nextflow.io | bash`. It is recommended that you install nextflow in a central locaton and not in the same folder as the repository files so that you can run this simple test:
+First, you need to be able to run nextflow. Fortunately, it is easy to install: [with details here](<https://www.nextflow.io/>), but if you already have java 1.8 installed you can just cd to the folder where you want to install it and run `curl -s https://get.nextflow.io | bash`. It is recommended that you install nextflow in a central locaton and not in the same folder as the repository files so that you can run this simple test:
 
 To run a quick test of your installation, run this in another folder (away from the `nextflow.config` file in this repository):
 
@@ -70,7 +70,7 @@ You can set up a csv file that contains many samples if you want to run them all
 
 In this repository there is a file called `nextflow.config` that contains some important parameters to control how the pipeline is run.
 
-Perhaps the only line you need to look at initially is the `executor`, and possibly the `queue` line. The executor instructs nextflow about how to run the commands. Unless you are running analysis in the cloud, you will want to set `executor` to either `local` (to run all the commands on the current machine) or `slurm` to run all the jobs using a slurm scheduler. If you use `slurm` you want to run the nextflow command on your cluster head node and if you want to use a specific partition on your cluster you need to set `queue` appropriately. All of the available executors with instructions for what to put in the `nextflow.config` file are here: (<https://www.nextflow.io/docs/latest/executor.html)>
+Perhaps the only line you need to look at initially is the `executor`, and possibly the `queue` line. The executor instructs nextflow about how to run the commands. Unless you are running analysis in the cloud, you will want to set `executor` to either `local` (to run all the commands on the current machine) or `slurm` to run all the jobs using a slurm scheduler. If you use `slurm` you want to run the nextflow command on your cluster head node and if you want to use a specific partition on your cluster you need to set `queue` appropriately. All of the available executors with instructions for what to put in the `nextflow.config` file are here: <https://www.nextflow.io/docs/latest/executor.html>
 
 **To run the pipeline you can start with this command**:
 
@@ -129,4 +129,4 @@ Another output file named `TMB_panel_estimates.txt` contains counts and estimate
 
 ## Acknowledgements
 
-This project is supported in part by PROFYLE <https://www.tfri.ca/profyle>
+This project is supported in part by PROFYLE: <https://www.tfri.ca/profyle>
