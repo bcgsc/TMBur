@@ -28,9 +28,9 @@ process mutect2 {
 			path("mutect2_${patient}_${T}_${N}_${chromosome}_${start}_${end}.vcf")
 
     /* Unlike the coordinate system used by other standards such as GFF, the system used by
-        the BED format is zero-based for the coordinate start and one-based for the coordinate
-        end. Thus, the nucleotide with the coordinate 1 in a genome will have a value of 0 in
-        column 2 and a value of 1 in column 3. */
+       the BED format is zero-based for the coordinate start and one-based for the coordinate
+       end. Thus, the nucleotide with the coordinate 1 in a genome will have a value of 0 in
+       column 2 and a value of 1 in column 3. */
     script:
         """
         start_plus_1=\$((${start}+1))

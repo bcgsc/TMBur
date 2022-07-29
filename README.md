@@ -23,13 +23,21 @@ The workflow leverages the following bioinformatics tools for analysis. These ar
 + MSIsensor2 (<https://github.com/niu-lab/msisensor2)>
 + SnpEff (<https://pcingola.github.io/SnpEff/)>
 
+The `plot_mutation_spectrum.py` scripts requires `SigProfilerMatrixGenerator` to run. This can be installed by running:
+
+```shell
+pip install -r requirements.txt
+```
+
 ## Getting started
 
 ### Clone the Repository
 
 If you don't yet have the code on your network you can clone this repo to your filesystem:
 
-`git clone https://github.com/bcgsc/TMBur.git`
+```shell
+git clone https://github.com/bcgsc/TMBur.git
+```
 
 ### Install Nextflow
 
