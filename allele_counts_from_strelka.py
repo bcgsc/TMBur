@@ -80,7 +80,7 @@ def main():
             print >> af_0p9_0p95_file, line.rstrip()
             print >> af_0p95_1p0_file, line.rstrip()
         else:
-            AF = calculate_AF(line)
+            AF = calculate_af(line)
             if AF >= 0 and AF < 0.05:
                 print >> af_0p0_0p05_file, line.rstrip()
             if AF >= 0.05 and AF < 0.1:
@@ -129,7 +129,7 @@ def main():
 # tier1RefCounts = First comma-delimited value from $refCounts
 # tier1AltCounts = First comma-delimited value from $altCounts
 # Somatic allele freqeuncy is $tier1AltCounts / ($tier1AltCounts + $tier1RefCounts)
-def calculate_AF(line):
+def calculate_af(line):
     base_pos = {"A": 0, "C": 1, "G": 2, "T": 3}
 
     tokens = line.split("\t")

@@ -54,7 +54,7 @@ process mutect2 {
 }
 
 // use the fasta file and split it into X sized bins
-process split_reference {
+process splitReference {
     input:
         path(reference_fa)
         path(reference_dict)
@@ -86,7 +86,7 @@ process split_reference {
  * i.e. the "gather" step of a scatter-gather workflow.  Does the same for the stats files which
  * are needed for GATK 4.1+
  */
-process merge_vcf_and_stats_files {
+process mergeVcfAndStatsFiles {
     tag "${patient}_${T}_${N}"
 
     input:
@@ -115,7 +115,7 @@ process merge_vcf_and_stats_files {
  * Just takes a list of vcfs (in a file) and makes another VCF containing a merge from the list
  * i.e. the "gather" step of a scatter-gather workflow.
  */
-process merge_vcf_files {
+process mergeVcfFiles {
     tag "${params.out_dir}/${patient}_${T}_${N}/mutect_raw/"
 
     input:
@@ -134,7 +134,7 @@ process merge_vcf_files {
 }
 
 // filter the final file - this just marks variants as PASS or not.
-process mark_pass_vcfs {
+process markPassVcfs {
     tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}", mode: 'copy'
 
@@ -160,7 +160,7 @@ process mark_pass_vcfs {
 }
 
 // create a file with just the passed variants.
-process create_pass_vcfs {
+process createPassVcfs {
     tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/mutect_passed/", mode: 'copy'
 
@@ -179,7 +179,7 @@ process create_pass_vcfs {
         """
 }
 
-process gatk_index_feature {
+process gatkIndexFeature {
     tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/mutect_indexed/", mode: 'copy'
 
@@ -196,7 +196,7 @@ process gatk_index_feature {
 }
 
 // Split the vcf file into SNVs and INDELs. May omit complex variants that combine SNVs and INDELs.
-process split_vcfs_into_SNVs_and_INDELs {
+process splitVcfsIntoSnvsAndIndels {
     tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/mutect_snv_indel_split/", mode: 'copy'
 

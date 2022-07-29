@@ -5,7 +5,7 @@ nextflow.enable.dsl=2
 snpSift="java -jar /usr/TMB/snpEff/SnpSift.jar"
 
 // an ugly way to access the file that is distributed in the container
-process copy_reference {
+process copyReference {
 	tag "$fasta_name"
 	input:
 		val(fasta_name)
@@ -19,7 +19,7 @@ process copy_reference {
 		"""
 }
 
-process bwa_index_reference {
+process bwaIndexReference {
 	tag "$fasta"
 	input:
 		path(fasta)
@@ -33,7 +33,7 @@ process bwa_index_reference {
 		"""
 }
 
-process samtools_index_reference {
+process samtoolsIndexReference {
 	tag "$fasta"
 	input:
 		path(fasta)
@@ -47,7 +47,7 @@ process samtools_index_reference {
     	"""
 }
 
-process gatk_index_reference {
+process gatkIndexReference {
 	tag "$fasta"
 	input:
 		path(fasta)
@@ -61,7 +61,7 @@ process gatk_index_reference {
 		"""
 }
 
-process create_RTG_reference {
+process createRtgReference {
 	tag "$fasta"
 	input:
 		path(fasta)
@@ -77,7 +77,7 @@ process create_RTG_reference {
 
 // collect the count of bases in 1-22,X,Y to use as the denominator later on
 // future versions might consider the sex to normalize for XX or XY
-process count_fasta_bases {
+process countFastaBases {
 	tag "$fasta"
 	input:
 		path(fasta)
@@ -95,14 +95,14 @@ process count_fasta_bases {
 		"""
 }
 
-process count_CDS_bases {
+process countCdsBases {
 	tag "$anno"
 	input:
 		val(anno)
 
 	output:
-		path('CDS_size.txt'), emit: CDS_size_file
-		path('CDS.bed'), emit: CDS_bed
+		path('CDS_size.txt'), emit: cds_size_file
+		path('CDS.bed'), emit: cds_bed
 
 	script:
 		"""
@@ -115,7 +115,7 @@ process count_CDS_bases {
 		"""
 }
 
-process trim_pair {
+process trimPair {
     tag "$an_id"
 	cpus 10
 
@@ -141,7 +141,7 @@ process trim_pair {
  		"""
 }
 
-process align_reads {
+process alignReads {
 	tag "$an_id"
 	cpus 48
 	memory '48 GB'
@@ -163,7 +163,7 @@ process align_reads {
 		"""
 }
 
-process sort_bam {
+process sortBam {
 	tag "$an_id"
 	cpus 10
 
@@ -179,7 +179,7 @@ process sort_bam {
 		"""
 }
 
-process merge_bams {
+process mergeBams {
 	tag "${patient}_${tissue}"
 	memory "64 GB"
 	cpus 16
@@ -196,7 +196,7 @@ process merge_bams {
 		"""
 }
 
-process mark_duplicates {
+process markDuplicates {
 	tag "${patient}_${tissue}"
 	publishDir "${params.out_dir}/bams/${patient}_bams"
 	memory '128 GB'
@@ -222,7 +222,7 @@ process mark_duplicates {
 		"""
 }
 
-process MSIsensor2 {
+process msiSensor2 {
 	tag "${patient}_${T}_${N}"
 	publishDir "${params.out_dir}/${patient}_${T}_${N}/MSIsensor2"
 	cpus 32
@@ -374,7 +374,7 @@ process strelka {
 }
 
 // create VCF files with just the passed variants. Will be zipped/tabix
-process create_pass_vcfs_strelka {
+process createPassVcfsStrelka {
     tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/strelka_passed", mode: 'copy'
 
@@ -412,7 +412,7 @@ process create_pass_vcfs_strelka {
 }
 
 // use RTGtools to intersect the variants. SNVs and INDELs are intersected separately
-process rtg_intersect_calls {
+process rtgIntersectCalls {
    	tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/variant_intersect", mode: 'copy'
 	cpus 10
@@ -497,7 +497,7 @@ process rtg_intersect_calls {
 }
 
 // annotate the final calls with SNPEff
-process annotate_small_variants {
+process annotateSmallVariants {
 	tag "${patient}_${T}_${N}"
 	publishDir "${params.out_dir}/${patient}_${T}_${N}/annotated_variants", mode: 'copy'
 	memory '48 GB'
@@ -541,7 +541,7 @@ process annotate_small_variants {
 		"""
 }
 
-process create_signatures {
+process createSignatures {
 	tag "${patient}_${T}_${N}"
 	publishDir "${params.out_dir}/${patient}_${T}_${N}/signatures", mode: 'copy'
 
@@ -579,7 +579,7 @@ process create_signatures {
  * Annotations should be already done with SNPEff. Creates a TMB estimate mimicing a clinical panel.
  * Requires a COSMIC VCF.
  */
-process create_panel_report {
+process createPanelReport {
 	tag "${patient}"
 	publishDir "${params.out_dir}/${patient}_${T}_${N}/report", mode: 'copy', overwrite: true
 	// occasionally there are zero variants, creating a div-by-0 error below.
@@ -688,7 +688,7 @@ process create_panel_report {
 }
 
 // final report of the different computed values
-process create_report {
+process createReport {
 	tag "${patient}"
 	publishDir "${params.out_dir}/${patient}_${T}_${N}/report", mode: 'copy', overwrite: true
 
