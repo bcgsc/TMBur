@@ -42,9 +42,7 @@ include {
     createSplitCoordsWf
 } from './mutect2_workflow.nf'
 
-/*
-* pipeline input parameters
-*/
+// pipeline input parameters
 params.samples_file = '/projects/rcorbettprj2/mutationalBurden/PROFYLE_container/2p0/test_data/samples.csv'
 params.out_dir = '/projects/rcorbettprj2/mutationalBurden/PROFYLE_container/2p0/test_data/output'
 params.release = '2.2.5'
@@ -57,7 +55,6 @@ out_dir         : ${params.out_dir}
 reference       : ${params.reference_file}
 annotation      : ${params.annotation}
 """
-.stripIndent()
 
 // main workflow
 workflow {
@@ -66,9 +63,6 @@ workflow {
         .fromPath(params.samples_file)
         .splitCsv(header: true)
         .map{ row-> tuple(file(row.read1).baseName, row.patient, row.tissue, file(row.read1), file(row.read2)) }
-
-    // print out the CSV data
-    // samples.view()
 
     // set up the reference files
     reference_ch = copyReference(params.reference_file)
@@ -81,25 +75,21 @@ workflow {
 
     // preprocess fastq files
     trimPair(samples)
-    // trimPair.out.fastqs.view()
 
     // align files
     alignReads(trimPair.out.fastqs, reference_ch, bwa_index)
     sortBam(alignReads.out)
 
-    // merge + dupmark
-    // split into 2 channels, one for merging bams, the other uses bams from one
-    // fastq pair
+    // split into 2 channels, one for merging bams, the other uses bams from one fastq pair
     bam_lists = sortBam.out.groupTuple(by: [0, 1]).branch {
         single: it[3].size() <= 1
         multiple: it[3].size() > 1
     }
     // merge where multiple bams from same patient-tissue combination
     mergeBams(bam_lists.multiple)
+
     // reformat non-merged entries to match output of merge_bam
-    single_bams = bam_lists.single.map {
-        patient, tissue, an_id, bam -> [patient, tissue, bam[0]]
-    }
+    single_bams = bam_lists.single.map { patient, tissue, an_id, bam -> [patient, tissue, bam[0]] }
 
     // markDuplicates on all single and merged bams
     markDuplicates(single_bams.mix(mergeBams.out))
@@ -109,21 +99,15 @@ workflow {
 	    tumour : it[1] =~ /^T.*/
 	    normal : it[1] =~ /^N.*/
 	}
-    // split_tissues.tumour.view { "[T/N] $it is a tumour" }
-    // split_tissues.normal.view { "[T/N] $it is a normal" }
 
-    bams_for_somatic_ch = split_tissues.tumour.combine(split_tissues.normal, by : 0)
-	// bams_for_somatic_ch.view { "[crossed] $it" }
+    bams_for_somatic_ch = split_tissues.tumour.combine(split_tissues.normal, by: 0)
 
     // call all the somatic analyses
     msiSensor2(bams_for_somatic_ch)
     manta(bams_for_somatic_ch, fai_index, reference_ch) // only works for deep genomes
     strelka(manta.out, fai_index, reference_ch)
     createPassVcfsStrelka(strelka.out)
-    mutect2Wf(bams_for_somatic_ch,
-        reference_ch,
-        dict_index,
-		fai_index)
+    mutect2Wf(bams_for_somatic_ch, reference_ch, dict_index, fai_index)
 
     // merge Strelka and GATK SNVs and INDELs
     rtgIntersectCalls(createPassVcfsStrelka.out.join(mutect2Wf.out, by: [1, 2, 3]), rtg_reference)
@@ -142,13 +126,10 @@ workflow {
 
     // panel_foundation_one (laura)
     createPanelReport(base_count_file, countCdsBases.out.cds_size_file, countCdsBases.out.cds_bed, params.cosmic_vcf, all_results)
-
-    // QC?
 }
 
 // will run at the end of the analysis.
 workflow.onComplete {
-	// final_results_ch.view{ println "[complete] $it"}
 	println "Pipeline $workflow.scriptName completed at: $workflow.complete"
 	println "Execution status: ${ workflow.success ? 'OK' : 'failed' }"
 }

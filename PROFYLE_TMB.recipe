@@ -4,8 +4,7 @@ MirrorURL: http://mirror.centos.org/centos-%{OSVERSION}/%{OSVERSION}/os/x86_64/
 Include: yum
 
 %runscript
-    echo "This container holds the tools and resources required for the PROFYLE TMB work. \
-    	 It should be orchestrated using the associated nextflow scripts."
+    echo "This container holds the tools and resources required for the PROFYLE TMB work. It should be orchestrated using the associated nextflow scripts."
 
 %post
     mkdir -p /reference
@@ -23,7 +22,7 @@ Include: yum
     yum -y install bzip2-devel
     yum -y install xz-devel
 
-    #install samtools
+    # install samtools
     wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
     tar xvjf samtools-1.9.tar.bz2
     cd samtools-1.9
@@ -32,11 +31,11 @@ Include: yum
     cp samtools ..
     cd ..
 
-    #install fastp
+    # install fastp
     wget http://opengene.org/fastp/fastp
     chmod a+x ./fastp
 
-    #install bwa
+    # install bwa
     wget https://github.com/lh3/bwa/releases/download/v0.7.17/bwa-0.7.17.tar.bz2
     tar -xf bwa-0.7.17.tar.bz2
     cd bwa-0.7.17
@@ -44,32 +43,32 @@ Include: yum
     cp bwa ..
     cd ..
 
-    #install sambamba
+    # install sambamba
     wget https://github.com/biod/sambamba/releases/download/v0.5.5/sambamba_v0.5.5_linux.tar.bz2
     tar -xf sambamba_v0.5.5_linux.tar.bz2
     ln -s sambamba_v0.5.5 sambamba
     chmod 775 sambamba
 
-    #install strelka2.9.2
+    # install strelka2.9.2
     wget https://github.com/Illumina/strelka/releases/download/v2.9.2/strelka-2.9.2.centos6_x86_64.tar.bz2
     tar xvjf strelka-2.9.2.centos6_x86_64.tar.bz2
-    #run install tests
+    # run install tests
     # bash strelka-2.9.2.centos6_x86_64/bin/runStrelkaSomaticWorkflowDemo.bash
     # bash strelka-2.9.2.centos6_x86_64/bin/runStrelkaGermlineWorkflowDemo.bash
 
-    #install Manta for SV calls, and upstream Strelka calling
+    # install Manta for SV calls, and upstream Strelka calling
     wget https://github.com/Illumina/manta/releases/download/v1.6.0/manta-1.6.0.centos6_x86_64.tar.bz2
     tar xvjf manta-1.6.0.centos6_x86_64.tar.bz2
 
-    #run a small tests in Manta
+    # run a small tests in Manta
     # python manta-1.6.0.centos6_x86_64/bin//runMantaWorkflowDemo.py
 
-    #bedtools
+    # bedtools
     wget https://github.com/arq5x/bedtools2/releases/download/v2.29.2/bedtools.static.binary
     chmod 775 bedtools.static.binary
     ln -s bedtools.static.binary bedtools
 
-    #seqtk for counting fasta bases quickly
+    # seqtk for counting fasta bases quickly
     wget https://github.com/lh3/seqtk/archive/v1.3.tar.gz
     tar -xvf v1.3.tar.gz
     cd seqtk-1.3/
@@ -77,39 +76,39 @@ Include: yum
     cd /usr/TMB
     ln -s /usr/TMB/seqtk-1.3/seqtk
 
-    #install snpEff
+    # install snpEff
     wget https://cfhcable.dl.sourceforge.net/project/snpeff/snpEff_v4_3t_core.zip
     unzip snpEff_v4_3t_core.zip
 
-    #Set up Ensembl 75 GRCh37 database (will take a few minutes)
+    # Set up Ensembl 75 GRCh37 database (will take a few minutes)
     java -jar /usr/TMB/snpEff/snpEff.jar download GRCh37.75
-    #extract the stats for the annotations - needs about 16Gb od RAM so this won't build on singularityhub where the RAM limit is 3.5Gb.
+    # extract the stats for the annotations - needs about 16Gb od RAM so this won't build on singularityhub where the RAM limit is 3.5Gb.
     java -jar /usr/TMB/snpEff/snpEff.jar dump -v -bed GRCh37.75 > GRCh37.75.bed
-    #get the size of the CDS
+    # get the size of the CDS
     grep -E '^[1234567890XY]{1,2}\s' GRCh37.75.bed | grep CDS | ./bedtools.static.binary sort | ./bedtools.static.binary merge | awk '{ print $3-$2 }' | paste -sd+ | bc > CDS_size.txt
 
-    #msisensor install - would be nice to scan the reference at setup, but it needs to match the reference supplied at runtime.
+    # msisensor install - would be nice to scan the reference at setup, but it needs to match the reference supplied at runtime.
     git clone https://github.com/niu-lab/msisensor2.git
     cd msisensor2
     chmod +x msisensor2
     cd ..
     ln -s msisensor2/msisensor2 msisensor
 
-    #install gatk
+    # install gatk
     wget https://github.com/broadinstitute/gatk/releases/download/4.0.10.0/gatk-4.0.10.0.zip
     unzip gatk-4.0.10.0.zip
 
-    #install RTGtools
+    # install RTGtools
     wget https://github.com/RealTimeGenomics/rtg-tools/releases/download/3.11/rtg-tools-3.11-linux-x64.zip
     unzip rtg-tools-3.11-linux-x64.zip
 
 %files
     allele_counts_from_strelka.py /usr/TMB/allele_counts_from_strelka.py
-    #copy in our version of hg19 with the pre-built index. This way no-one can use a different one.
-    #needs to be in a separate folder from the binaries so that the folder doesn't get mounted twice.
-    #This might not be an issue with newer versions of singularity.
+    # copy in our version of hg19 with the pre-built index. This way no-one can use a different one.
+    # needs to be in a separate folder from the binaries so that the folder doesn't get mounted twice.
+    # This might not be an issue with newer versions of singularity.
     hs37d5.fa /reference/hs37d5.fa
 
 %environment
     export PATH=/usr/TMB:$PATH
-    #export LC_ALL=C
+    # export LC_ALL=C

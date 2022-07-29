@@ -1,6 +1,3 @@
-#!/usr/bin/env nextflow
-nextflow.preview.dsl=2
-
 include {
 	splitReference;
 	mutect2;
@@ -25,10 +22,7 @@ workflow mutect2Wf {
 
 	main:
 		// get the coords for the gatk split work
-    	createSplitCoordsWf(reference_ch,
-			dict_index,
-			fai_index,
-			params.gatk_bin_size)
+    	createSplitCoordsWf(reference_ch, dict_index, fai_index, params.gatk_bin_size)
 
 		/* Make a big matrix combining all of the needed files and a bed range to pass into each
 		   Mutect2 job. Put all the information into a tuple to cross with the bed entries. */
@@ -39,7 +33,6 @@ workflow mutect2Wf {
 
 		// collect VCFs from the same samples
 		collected_vcfs = split_vcfs.groupTuple(by: [0, 1, 2])
-		// collected_vcfs.view()
 
 		// merge and filter the results
 		merged_vcfs = mergeVcfFiles(collected_vcfs)
@@ -64,7 +57,7 @@ workflow createSplitCoordsWf {
 		split_bed = splitReference(reference_ch, dict_index, fai_index, gatk_bin_size)
 		bed_entries = split_bed
 			.splitCsv(sep: "\t", header: ['chr', 'start', 'end', 'NA1', 'NA2', 'NA3'])
-			.map{row  -> tuple(row.chr, row.start, row.end)}
+			.map{ row  -> tuple(row.chr, row.start, row.end) }
 	emit:
 		bed_entries
 }

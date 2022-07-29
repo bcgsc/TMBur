@@ -1,6 +1,3 @@
-#!/usr/bin/env nextflow
-nextflow.enable.dsl=2
-
 // shorthand to run SnpSift in the container
 snpSift="java -jar /usr/TMB/snpEff/SnpSift.jar"
 
@@ -8,10 +5,10 @@ snpSift="java -jar /usr/TMB/snpEff/SnpSift.jar"
 process copyReference {
 	tag "$fasta_name"
 	input:
-		val(fasta_name)
+		val fasta_name 
 
 	output:
-		path("*.fa")
+		path "*.fa" 
 
 	script:
 		"""
@@ -22,10 +19,10 @@ process copyReference {
 process bwaIndexReference {
 	tag "$fasta"
 	input:
-		path(fasta)
+		path fasta 
 
 	output:
-		path("${fasta}.*")
+		path "${fasta}.*" 
 
 	script:
 		"""
@@ -36,10 +33,10 @@ process bwaIndexReference {
 process samtoolsIndexReference {
 	tag "$fasta"
 	input:
-		path(fasta)
+		path fasta 
 
 	output:
-		path("${fasta}.fai")
+		path "${fasta}.fai" 
 
 	script:
 		"""
@@ -50,10 +47,10 @@ process samtoolsIndexReference {
 process gatkIndexReference {
 	tag "$fasta"
 	input:
-		path(fasta)
+		path fasta 
 
 	output:
-        path("${fasta.baseName}.dict")
+        path "${fasta.baseName}.dict" 
 
 	script:
 		"""
@@ -64,10 +61,10 @@ process gatkIndexReference {
 process createRtgReference {
 	tag "$fasta"
 	input:
-		path(fasta)
+		path fasta 
 
 	output:
-        path('SDF')
+        path 'SDF' 
 
 	script:
 		"""
@@ -80,10 +77,10 @@ process createRtgReference {
 process countFastaBases {
 	tag "$fasta"
 	input:
-		path(fasta)
+		path fasta 
 
 	output:
-		path('base_count.txt')
+		path 'base_count.txt' 
 
 	script:
 		"""
@@ -98,11 +95,11 @@ process countFastaBases {
 process countCdsBases {
 	tag "$anno"
 	input:
-		val(anno)
+		val anno 
 
 	output:
-		path('CDS_size.txt'), emit: cds_size_file
-		path('CDS.bed'), emit: cds_bed
+		path 'CDS_size.txt' , emit: cds_size_file
+		path 'CDS.bed' , emit: cds_bed
 
 	script:
 		"""
@@ -128,7 +125,7 @@ process trimPair {
 			val(tissue),
 			path("${reads1}.fastp.trimmed.fq.gz"),
 			path("${reads2}.fastp.trimmed.fq.gz"), emit: fastqs
-        path("${an_id}.fastp.json"), emit: jsons
+        path "${an_id}.fastp.json" , emit: jsons
 
 	script:
  		"""
@@ -148,8 +145,8 @@ process alignReads {
 
 	input:
 		tuple val(an_id), val(patient), val(tissue), path(trim1), path(trim2)
-		path(reference_fasta)
-		path(bwa_index)
+		path reference_fasta 
+		path bwa_index 
 
 	output:
 		tuple val(an_id), val(patient), val(tissue), path("${an_id}.bam")
@@ -432,7 +429,7 @@ process rtgIntersectCalls {
 			path(mutect_snvs),
 			path(mutect_indels_index),
 			path(mutect_snvs_index)
-		path(rtg_reference)
+		path rtg_reference 
 
     output:
         tuple val('intersected_variants'),
@@ -587,10 +584,10 @@ process createPanelReport {
 	memory '48 GB'
 
 	input:
-		path(base_count)
-		path(cds_count)
-		path(cds_bed)
-		path(cosmic_vcf)
+		path base_count 
+		path cds_count 
+		path cds_bed 
+		path cosmic_vcf 
 		tuple val(patient),
 			val(T),
 			val(N),
@@ -605,13 +602,13 @@ process createPanelReport {
 
 	script:
 		// will miss MNP (multi-nucleotide-polymorphism) counts
-		if(cosmic_vcf.exists()) // untested
+		if (cosmic_vcf.exists()) // untested
 		"""
 		total_CDS_bases=`cat ${cds_count}`
 		echo "indel file: ${indel_vcf}" > TMB_panel_estimates.txt
 		echo "snv file: ${snv_vcf}" >> TMB_panel_estimates.txt
 
-		#Get variants in the panel genes
+		# Get variants in the panel genes
 		${snpSift} filter -s /usr/TMB/panel_gene_list_20200218.txt \
 			"(ANN[*].GENE in SET[0])" \
 			${snv_vcf} > ${snv_vcf.simpleName}_panel.vcf
@@ -623,7 +620,7 @@ process createPanelReport {
 		printf "SNVs in panel: %3f\\n" \${panel_SNV_count} >> TMB_panel_estimates.txt
 		printf "INDELs in panel : %3f\\n" \${panel_INDEL_count} >> TMB_panel_estimates.txt
 
-		#limit to the CDS of the genes in the panel
+		# limit to the CDS of the genes in the panel
 		bedtools intersect \
 			-a ${snv_vcf.simpleName}_panel.vcf \
 			-b ${cds_bed} \
@@ -639,7 +636,7 @@ process createPanelReport {
 		printf "SNVs in panel+CDS: %3f\\n" \${panel_CDS_SNV_count} >> TMB_panel_estimates.txt
 		printf "INDELs in panel+CDS : %3f\\n" \${panel_CDS_INDEL_count} >> TMB_panel_estimates.txt
 
-		#Annotate calls with COSMIC
+		# Annotate calls with COSMIC
 		${snpSift} annotate \
 			${cosmic_vcf} \
 			${snv_vcf.simpleName}_panel_CDS.vcf \
@@ -649,7 +646,7 @@ process createPanelReport {
 			${indel_vcf.simpleName}_panel_CDS.vcf \
 			> ${indel_vcf.simpleName}_panel_CDS_cosmic.vcf
 
-		#Remove COSMIC variants
+		# Remove COSMIC variants
 		${snpSift} filter \
 			"( ID !~ 'COS' )" \
 			${snv_vcf.simpleName}_panel_CDS_cosmic.vcf \
@@ -663,7 +660,7 @@ process createPanelReport {
 		printf "SNVs in panel+CDS-COSMIC: %3f\\n" \${panel_CDS_SNV_noCosmic_count} >> TMB_panel_estimates.txt
 		printf "INDELs in panel+CDS-COSMIC : %3f\\n" \${panel_CDS_INDEL_noCosmic_count} >> TMB_panel_estimates.txt
 
-		#Take the above (in panel, in CDS, not in COSMIC) and filter for specific TSG variants.
+		# Take the above (in panel, in CDS, not in COSMIC) and filter for specific TSG variants.
 		# Looking for remaining nonsense SNVs in TSGs or protein changing INDELs
 		TSG_nonsense_SNV=`${snpSift} filter -s /usr/TMB/TSG_list.txt \
 			\"(EFF[*].EFFECT has 'stop_gained') && (ANN[*].GENE in SET[0])\" \
@@ -693,9 +690,9 @@ process createReport {
 	publishDir "${params.out_dir}/${patient}_${T}_${N}/report", mode: 'copy', overwrite: true
 
 	input:
-		path(base_count)
-		path(cds_count)
-		path(cds_bed)
+		path base_count 
+		path cds_count 
+		path cds_bed 
 		tuple val(patient),
 			val(T),
 			val(N),
@@ -704,7 +701,7 @@ process createReport {
 			val(dont_use2),
 			path(snv_vcf),
 			path(indel_vcf)
-		val(release_val)
+		val release_val 
 
 	output:
 		tuple val(patient),
@@ -722,7 +719,7 @@ process createReport {
 		echo "Tumour: ${T}" >> TMB_counts.txt
 		echo "Normal: ${N}" >> TMB_counts.txt
 
-		#AF work - perhaps should go into its own process
+		# AF work - perhaps should go into its own process
 		java -jar /usr/TMB/snpEff/SnpSift.jar extractFields ${snv_vcf} GEN[1].AF > AF.csv
 		for i in \$(seq 0 0.1 0.9); do \
 			count=`awk -v var=\$i '{if (\$1 > var && \$1 <= var+0.1 ) print \$1}' AF.csv | wc -l`;
@@ -739,8 +736,8 @@ process createReport {
 			printf "%s-%s %d\\n"  \$i \$(echo \$i + 0.1 | bc) \$count;
 		done > passed_SNV_coding_AF_counts.txt
 
-		#GENOME WIDE TMB
-		#uses coords from 1-22,X,Y with non-N reference bases
+		# GENOME WIDE TMB
+		# uses coords from 1-22,X,Y with non-N reference bases
 		total_bases=`cat ${base_count}`
 		total_SNVs=`cat ${snv_vcf} | grep -E '^[1234567890XY]{1,2}\\s' | wc -l`
 		total_Indels=`cat ${indel_vcf} | grep -E '^[1234567890XY]{1,2}\\s' | wc -l`
@@ -750,7 +747,7 @@ process createReport {
 		printf "Genome SNV TMB: %3.2f\\n" `echo "scale=8; \${total_SNVs} * 1000000 / \${total_bases}" | bc` >> TMB_counts.txt
 		printf "Genome Indel TMB: %3.2f\\n" `echo "scale=8; \${total_Indels} * 1000000 / \${total_bases}" | bc` >> TMB_counts.txt
 
-		#CDS COORDINATE TMB - simply bedtools intersect with CDS coords
+		# CDS COORDINATE TMB - simply bedtools intersect with CDS coords
 		total_CDS_bases=`cat ${cds_count}`
 		total_CDS_SNVs=`bedtools intersect -a ${snv_vcf} -b ${cds_bed} | grep -E '^[1234567890XY]{1,2}\\s' | wc -l`
 		total_CDS_Indels=`bedtools intersect -a ${indel_vcf} -b ${cds_bed} | grep -E '^[1234567890XY]{1,2}\\s' | wc -l`
@@ -760,7 +757,7 @@ process createReport {
 		printf "CDS SNV TMB: %3.2f\\n" `echo "scale=8; \${total_CDS_SNVs} * 1000000 / \${total_CDS_bases}" | bc` >> TMB_counts.txt
 		printf "CDS Indel TMB: %3.2f\\n" `echo "scale=8; \${total_CDS_Indels} * 1000000 / \${total_CDS_bases}" | bc` >> TMB_counts.txt
 
-		#CODING/PROTEIN TMB
+		# CODING/PROTEIN TMB
 		total_protein_SNVs=`${snpSift} filter \
 			"(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" \
 			${snv_vcf} | \
@@ -776,7 +773,7 @@ process createReport {
 		printf "Protein SNV TMB: %3.2f\\n" `echo "scale=8; \${total_protein_SNVs} * 1000000 / \${total_CDS_bases}" | bc` >> TMB_counts.txt
 		printf "Protein Indel TMB: %3.2f\\n" `echo "scale=8; \${total_protein_Indels} * 1000000 / \${total_CDS_bases}" | bc` >> TMB_counts.txt
 
-		#MSI
+		# MSI
 		msi_score=`awk 'NR==2 { print \$NF }' ${msi_out}`
 		printf "MSI score: %3.2f\\n" \${msi_score} >> TMB_counts.txt
 

@@ -1,10 +1,3 @@
-#!/usr/bin/env nextflow
-nextflow.preview.dsl=2
-
-/*
-binaries
-*/
-
 /*
  * This is the main job that runs Mutect2 calling. It is set up to run on a specific region defined
  * by chromosome, start, and end.
@@ -24,9 +17,9 @@ process mutect2 {
             val(chromosome),
             val(start),
             val(end)
-        path(reference_file)
-        path(reference_dict)
-        path(reference_index)
+        path reference_file 
+        path reference_dict 
+        path reference_index 
 
     output:
         tuple val(patient),
@@ -56,13 +49,13 @@ process mutect2 {
 // use the fasta file and split it into X sized bins
 process splitReference {
     input:
-        path(reference_fa)
-        path(reference_dict)
-        path(reference_index)
-        val(bin_size)
+        path reference_fa 
+        path reference_dict 
+        path reference_index 
+        val bin_size 
 
     output:
-        path("${reference_fa.baseName}_${bin_size}.bed")
+        path "${reference_fa.baseName}_${bin_size}.bed" 
 
     script:
         """
@@ -143,9 +136,9 @@ process markPassVcfs {
             val(T),
             val(N),
             path(merged_vcf_file)
-        path(reference_fa)
-        path(reference_index)
-        path(reference_dict) // needs to be included to be linked in the folder
+        path reference_fa 
+        path reference_index 
+        path reference_dict  // needs to be included to be linked in the folder
 
     output:
         tuple val(patient), val(T), val(N), path("${merged_vcf_file.simpleName}.passmarked.vcf")
@@ -205,13 +198,13 @@ process splitVcfsIntoSnvsAndIndels {
 
     output:
         tuple val('Mutect2'),
-        val(patient),
-        val(T),
-        val(N),
-        path("mutect_${patient}_${T}_${N}.PASS.indel.vcf.gz"),
-        path("mutect_${patient}_${T}_${N}.PASS.snv.vcf.gz"),
-        path("mutect_${patient}_${T}_${N}.PASS.indel.vcf.gz.tbi"),
-        path("mutect_${patient}_${T}_${N}.PASS.snv.vcf.gz.tbi")
+            val(patient),
+            val(T),
+            val(N),
+            path("mutect_${patient}_${T}_${N}.PASS.indel.vcf.gz"),
+            path("mutect_${patient}_${T}_${N}.PASS.snv.vcf.gz"),
+            path("mutect_${patient}_${T}_${N}.PASS.indel.vcf.gz.tbi"),
+            path("mutect_${patient}_${T}_${N}.PASS.snv.vcf.gz.tbi")
 
     script:
         """
