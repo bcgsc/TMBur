@@ -5,12 +5,13 @@ nextflow.preview.dsl=2
 binaries
 */
 
-//This is the main job that runs Mutect2 calling.
-//It is set up to run on a specific region defined by
-//chromosome, start, and end.
+/*
+ * This is the main job that runs Mutect2 calling. It is set up to run on a specific region defined
+ * by chromosome, start, and end.
+ */
 process mutect2 {
     tag "${patient}_${T}_${N}_${chromosome}_${start}_${end}"
-    cpus 4 //seems to use about 400% CPU per job
+    cpus 4 // seems to use about 400% CPU per job
 
     input:
         tuple val(patient),
@@ -52,7 +53,7 @@ process mutect2 {
         """
 }
 
-//use the fasta file and split it into X sized bins
+// use the fasta file and split it into X sized bins
 process split_reference {
     input:
         path(reference_fa)
@@ -80,9 +81,11 @@ process split_reference {
         """
 }
 
-//just takes a list of vcfs (in a file) and makes another VCF containing a merge from the list
-//ie. the "gather" step of a scatter-gather workflow.  Does the same for the stats files
-//which are needed for GATK 4.1+
+/*
+ * Just takes a list of vcfs (in a file) and makes another VCF containing a merge from the list
+ * i.e. the "gather" step of a scatter-gather workflow.  Does the same for the stats files which
+ * are needed for GATK 4.1+
+ */
 process merge_vcf_and_stats_files {
     tag "${patient}_${T}_${N}"
 
@@ -108,8 +111,10 @@ process merge_vcf_and_stats_files {
         """
 }
 
-//just takes a list of vcfs (in a file) and makes another VCF containing a merge from the list
-//ie. the "gather" step of a scatter-gather workflow.
+/*
+ * Just takes a list of vcfs (in a file) and makes another VCF containing a merge from the list
+ * i.e. the "gather" step of a scatter-gather workflow.
+ */
 process merge_vcf_files {
     tag "${params.out_dir}/${patient}_${T}_${N}/mutect_raw/"
 
@@ -128,7 +133,7 @@ process merge_vcf_files {
         """
 }
 
-//filter the final file - this just marks variants as PASS or not.
+// filter the final file - this just marks variants as PASS or not.
 process mark_pass_vcfs {
     tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}", mode: 'copy'
@@ -154,7 +159,7 @@ process mark_pass_vcfs {
         """
 }
 
-//create a file with just the passed variants.
+// create a file with just the passed variants.
 process create_pass_vcfs {
     tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/mutect_passed/", mode: 'copy'
@@ -190,8 +195,7 @@ process gatk_index_feature {
         """
 }
 
-//split the vcf file into SNVs and INDELs.
-//may omit complex variants that combine SNVs and INDELs
+// Split the vcf file into SNVs and INDELs. May omit complex variants that combine SNVs and INDELs.
 process split_vcfs_into_SNVs_and_INDELs {
     tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/mutect_snv_indel_split/", mode: 'copy'

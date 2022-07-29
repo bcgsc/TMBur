@@ -36,7 +36,7 @@ def main():
         sys.exit()
 
     # set up to use GRCh37
-    # genInstall.install('GRCh37', rsync=False, bash=True)  #should be set up when container is built
+    # genInstall.install('GRCh37', rsync=False, bash=True)  # should be set up when container is built
     matGen.SigProfilerMatrixGeneratorFunc(
         args.name, args.reference, args.vcf_file_folder, plot=True
     )

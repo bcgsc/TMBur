@@ -1,10 +1,10 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-//shorthand to run SnpSift in the container
+// shorthand to run SnpSift in the container
 snpSift="java -jar /usr/TMB/snpEff/SnpSift.jar"
 
-//an ugly way to access the file that is distributed in the container
+// an ugly way to access the file that is distributed in the container
 process copy_reference {
 	tag "$fasta_name"
 	input:
@@ -75,8 +75,8 @@ process create_RTG_reference {
 		"""
 }
 
-//collect the count of bases in 1-22,X,Y to use as the denominator later on
-//future versions might consider the sex to normalize for XX or XY
+// collect the count of bases in 1-22,X,Y to use as the denominator later on
+// future versions might consider the sex to normalize for XX or XY
 process count_fasta_bases {
 	tag "$fasta"
 	input:
@@ -243,7 +243,7 @@ process MSIsensor2 {
 			val(N),
 			path("msisensor2_${patient}_${T}_${N}.txt")
 
-	// Had to take the "2" off the binary name due to folder naming clashes in the container
+	// had to take the "2" off the binary name due to folder naming clashes in the container
 	script:
 		"""
 		msisensor msi \
@@ -255,8 +255,10 @@ process MSIsensor2 {
 		"""
 }
 
-//Needs to be run on Deep bams.  If testing on shallow bams (single-digit X coverage)
-//this may fail due to no candidate events being detected
+/*
+ * Needs to be run on Deep bams. If testing on shallow bams (single-digit X coverage) this may fail
+ * due to no candidate events being detected.
+ */
 process manta {
 	tag "${patient}_${T}_${N}"
 	publishDir "${params.out_dir}/${patient}_${T}_${N}/Manta"
@@ -349,7 +351,7 @@ process strelka {
 
 	script:
 		"""
-		/usr/TMB/strelka-2.9.2.centos6_x86_64/bin//configureStrelkaSomaticWorkflow.py \
+		/usr/TMB/strelka-2.9.2.centos6_x86_64/bin/configureStrelkaSomaticWorkflow.py \
 		    --tumor ${T_bam} \
 			--normal ${N_bam} \
 			--referenceFasta ${reference} \
@@ -371,8 +373,7 @@ process strelka {
 		"""
 }
 
-//create VCF files with just the passed variants.
-//Will be zipped/tabix
+// create VCF files with just the passed variants. Will be zipped/tabix
 process create_pass_vcfs_strelka {
     tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/strelka_passed", mode: 'copy'
@@ -410,7 +411,7 @@ process create_pass_vcfs_strelka {
     	"""
 }
 
-//Use RTGtools to intersect the variants.   SNVs and INDELs are intersected separately
+// use RTGtools to intersect the variants. SNVs and INDELs are intersected separately
 process rtg_intersect_calls {
    	tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/variant_intersect", mode: 'copy'
@@ -495,7 +496,7 @@ process rtg_intersect_calls {
     	"""
 }
 
-//annotate the final calls with SNPEff
+// annotate the final calls with SNPEff
 process annotate_small_variants {
 	tag "${patient}_${T}_${N}"
 	publishDir "${params.out_dir}/${patient}_${T}_${N}/annotated_variants", mode: 'copy'
@@ -574,9 +575,10 @@ process create_signatures {
 		"""
 }
 
-//Annotations should be already done with SNPEff.
-//creates a TMB estimate mimicing a clinical panel
-//requires a COSMIC VCF
+/*
+ * Annotations should be already done with SNPEff. Creates a TMB estimate mimicing a clinical panel.
+ * Requires a COSMIC VCF.
+ */
 process create_panel_report {
 	tag "${patient}"
 	publishDir "${params.out_dir}/${patient}_${T}_${N}/report", mode: 'copy', overwrite: true
@@ -602,8 +604,8 @@ process create_panel_report {
 		tuple val(patient), val(T), val(N), path("TMB_panel_estimates.txt")
 
 	script:
-		//will miss MNP (multi-nucleotide-polymorphism) counts
-		if(cosmic_vcf.exists()) //untested
+		// will miss MNP (multi-nucleotide-polymorphism) counts
+		if(cosmic_vcf.exists()) // untested
 		"""
 		total_CDS_bases=`cat ${cds_count}`
 		echo "indel file: ${indel_vcf}" > TMB_panel_estimates.txt
@@ -685,7 +687,7 @@ process create_panel_report {
 		"""
 }
 
-//final report of the different computed values
+// final report of the different computed values
 process create_report {
 	tag "${patient}"
 	publishDir "${params.out_dir}/${patient}_${T}_${N}/report", mode: 'copy', overwrite: true
@@ -721,7 +723,7 @@ process create_report {
 		echo "Normal: ${N}" >> TMB_counts.txt
 
 		#AF work - perhaps should go into its own process
-		java -jar /usr/TMB/snpEff//SnpSift.jar extractFields ${snv_vcf} GEN[1].AF > AF.csv
+		java -jar /usr/TMB/snpEff/SnpSift.jar extractFields ${snv_vcf} GEN[1].AF > AF.csv
 		for i in \$(seq 0 0.1 0.9); do \
 			count=`awk -v var=\$i '{if (\$1 > var && \$1 <= var+0.1 ) print \$1}' AF.csv | wc -l`;
 			printf "%s-%s %d\\n"  \$i \$(echo \$i + 0.1 | bc) \$count;
