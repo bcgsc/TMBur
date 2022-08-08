@@ -120,7 +120,7 @@ workflow {
     all_results = msiSensor2.out.join(annotateSmallVariants.out.annnotations, by: [1, 2, 3])
 
     // produce AF report
-    createReport(base_count_file, countCdsBases.out.cds_size_file, countCdsBases.out.cds_bed, all_results, params.release)
+    createReport(base_count_file, countCdsBases.out.cds_size_file, countCdsBases.out.cds_bed, all_results)
 
     // produce signature results
     createSignatures(rtgIntersectCalls.out.joined_calls)

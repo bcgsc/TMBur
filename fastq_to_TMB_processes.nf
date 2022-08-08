@@ -701,7 +701,6 @@ process createReport {
 			val(dont_use2),
 			path(snv_vcf),
 			path(indel_vcf)
-		val release_val
 
 	output:
 		tuple val(patient),
@@ -713,7 +712,7 @@ process createReport {
 
 	script:
 		"""
-		echo "TMB Pipeline ${release_val}" > TMB_counts.txt
+		echo "TMB Pipeline ${params.release}" > TMB_counts.txt
 		echo "Config file ${params.samples_file}" >> TMB_counts.txt
 		echo "Patient: ${patient}" >> TMB_counts.txt
 		echo "Tumour: ${T}" >> TMB_counts.txt
