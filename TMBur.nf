@@ -43,17 +43,18 @@ include {
 } from './mutect2_workflow.nf'
 
 // pipeline input parameters
-params.samples_file = '/projects/rcorbettprj2/mutationalBurden/PROFYLE_container/2p0/test_data/samples.csv'
-params.out_dir = '/projects/rcorbettprj2/mutationalBurden/PROFYLE_container/2p0/test_data/output'
-params.release = '2.2.5'
+params.samples_file = 'samples.csv'
+params.out_dir = 'output'
 
 log.info """\
-TMB estimation pipeline
+TMB estimation pipeline ${params.release}
 ===================================
-samples_file    : ${params.samples_file}
-out_dir         : ${params.out_dir}
-reference       : ${params.reference_file}
-annotation      : ${params.annotation}
+samples file  : ${params.samples_file}
+output dir    : ${params.out_dir}
+reference     : ${params.reference_file}
+annotation    : ${params.annotation}
+GATK bin size : ${params.gatk_bin_size}
+COSMIC VCF    : ${params.cosmic_vcf}
 """
 
 // main workflow
