@@ -17,9 +17,9 @@ process mutect2 {
             val(chromosome),
             val(start),
             val(end)
-        path reference_file 
-        path reference_dict 
-        path reference_index 
+        path reference_file
+        path reference_dict
+        path reference_index
 
     output:
         tuple val(patient),
@@ -49,13 +49,13 @@ process mutect2 {
 // use the fasta file and split it into X sized bins
 process splitReference {
     input:
-        path reference_fa 
-        path reference_dict 
-        path reference_index 
-        val bin_size 
+        path reference_fa
+        path reference_dict
+        path reference_index
+        val bin_size
 
     output:
-        path "${reference_fa.baseName}_${bin_size}.bed" 
+        path "${reference_fa.baseName}_${bin_size}.bed"
 
     script:
         """
@@ -136,8 +136,8 @@ process markPassVcfs {
             val(T),
             val(N),
             path(merged_vcf_file)
-        path reference_fa 
-        path reference_index 
+        path reference_fa
+        path reference_index
         path reference_dict  // needs to be included to be linked in the folder
 
     output:

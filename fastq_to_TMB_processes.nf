@@ -5,10 +5,10 @@ snpSift="java -jar /usr/TMB/snpEff/SnpSift.jar"
 process copyReference {
 	tag "$fasta_name"
 	input:
-		val fasta_name 
+		val fasta_name
 
 	output:
-		path "*.fa" 
+		path "*.fa"
 
 	script:
 		"""
@@ -19,10 +19,10 @@ process copyReference {
 process bwaIndexReference {
 	tag "$fasta"
 	input:
-		path fasta 
+		path fasta
 
 	output:
-		path "${fasta}.*" 
+		path "${fasta}.*"
 
 	script:
 		"""
@@ -33,10 +33,10 @@ process bwaIndexReference {
 process samtoolsIndexReference {
 	tag "$fasta"
 	input:
-		path fasta 
+		path fasta
 
 	output:
-		path "${fasta}.fai" 
+		path "${fasta}.fai"
 
 	script:
 		"""
@@ -47,10 +47,10 @@ process samtoolsIndexReference {
 process gatkIndexReference {
 	tag "$fasta"
 	input:
-		path fasta 
+		path fasta
 
 	output:
-        path "${fasta.baseName}.dict" 
+        path "${fasta.baseName}.dict"
 
 	script:
 		"""
@@ -61,10 +61,10 @@ process gatkIndexReference {
 process createRtgReference {
 	tag "$fasta"
 	input:
-		path fasta 
+		path fasta
 
 	output:
-        path 'SDF' 
+        path 'SDF'
 
 	script:
 		"""
@@ -77,10 +77,10 @@ process createRtgReference {
 process countFastaBases {
 	tag "$fasta"
 	input:
-		path fasta 
+		path fasta
 
 	output:
-		path 'base_count.txt' 
+		path 'base_count.txt'
 
 	script:
 		"""
@@ -95,7 +95,7 @@ process countFastaBases {
 process countCdsBases {
 	tag "$anno"
 	input:
-		val anno 
+		val anno
 
 	output:
 		path 'CDS_size.txt' , emit: cds_size_file
@@ -145,8 +145,8 @@ process alignReads {
 
 	input:
 		tuple val(an_id), val(patient), val(tissue), path(trim1), path(trim2)
-		path reference_fasta 
-		path bwa_index 
+		path reference_fasta
+		path bwa_index
 
 	output:
 		tuple val(an_id), val(patient), val(tissue), path("${an_id}.bam")
@@ -429,7 +429,7 @@ process rtgIntersectCalls {
 			path(mutect_snvs),
 			path(mutect_indels_index),
 			path(mutect_snvs_index)
-		path rtg_reference 
+		path rtg_reference
 
     output:
         tuple val('intersected_variants'),
@@ -584,10 +584,10 @@ process createPanelReport {
 	memory '48 GB'
 
 	input:
-		path base_count 
-		path cds_count 
-		path cds_bed 
-		path cosmic_vcf 
+		path base_count
+		path cds_count
+		path cds_bed
+		path cosmic_vcf
 		tuple val(patient),
 			val(T),
 			val(N),
@@ -690,9 +690,9 @@ process createReport {
 	publishDir "${params.out_dir}/${patient}_${T}_${N}/report", mode: 'copy', overwrite: true
 
 	input:
-		path base_count 
-		path cds_count 
-		path cds_bed 
+		path base_count
+		path cds_count
+		path cds_bed
 		tuple val(patient),
 			val(T),
 			val(N),
@@ -701,7 +701,7 @@ process createReport {
 			val(dont_use2),
 			path(snv_vcf),
 			path(indel_vcf)
-		val release_val 
+		val release_val
 
 	output:
 		tuple val(patient),
