@@ -8,12 +8,12 @@ process mutect2 {
 
     input:
         tuple val(patient),
-			val(T),
-			path(T_bam),
-			path(T_bai),
-			val(N),
-			path(N_bam),
-			path(N_bai),
+            val(T),
+            path(T_bam),
+            path(T_bai),
+            val(N),
+            path(N_bam),
+            path(N_bai),
             val(chromosome),
             val(start),
             val(end)
@@ -25,7 +25,7 @@ process mutect2 {
         tuple val(patient),
             val(T),
             val(N),
-			path("mutect2_${patient}_${T}_${N}_${chromosome}_${start}_${end}.vcf")
+            path("mutect2_${patient}_${T}_${N}_${chromosome}_${start}_${end}.vcf")
 
     /* Unlike the coordinate system used by other standards such as GFF, the system used by
        the BED format is zero-based for the coordinate start and one-based for the coordinate

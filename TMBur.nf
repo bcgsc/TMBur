@@ -97,9 +97,9 @@ workflow {
 
     // to set up for somatic analysis get the cross product of the tumours and normals per patient
     split_tissues = markDuplicates.out.branch{
-	    tumour : it[1] =~ /^T.*/
-	    normal : it[1] =~ /^N.*/
-	}
+        tumour : it[1] =~ /^T.*/
+        normal : it[1] =~ /^N.*/
+    }
 
     bams_for_somatic_ch = split_tissues.tumour.combine(split_tissues.normal, by: 0)
 
@@ -131,6 +131,6 @@ workflow {
 
 // will run at the end of the analysis.
 workflow.onComplete {
-	println "Pipeline $workflow.scriptName completed at: $workflow.complete"
-	println "Execution status: ${ workflow.success ? 'OK' : 'failed' }"
+    println "Pipeline $workflow.scriptName completed at: $workflow.complete"
+    println "Execution status: ${ workflow.success ? 'OK' : 'failed' }"
 }
