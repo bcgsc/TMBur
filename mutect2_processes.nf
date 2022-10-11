@@ -4,7 +4,6 @@
  */
 process mutect2 {
     tag "${patient}_${T}_${N}_${chromosome}_${start}_${end}"
-    cpus 4 // seems to use about 400% CPU per job
 
     input:
         tuple val(patient),
