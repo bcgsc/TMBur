@@ -285,7 +285,7 @@ process manta {
             --referenceFasta=${reference}  \
             --runDir Manta
 
-        python Manta/runWorkflow.py -m local -j 16
+        python Manta/runWorkflow.py -m local -j 48
 
         mv Manta/results/variants/candidateSmallIndels.vcf.gz \
             Manta_${patient}_${T}_vs_${N}.candidateSmallIndels.vcf.gz
