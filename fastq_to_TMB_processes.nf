@@ -168,7 +168,7 @@ process sortBam {
 
     script:
         """
-        /usr/TMB/samtools sort -@ 10 -T . -o ${bam_file.baseName}.sorted.bam ${bam_file}
+        /usr/TMB/samtools sort -@ $task.cpus -T . -o ${bam_file.baseName}.sorted.bam ${bam_file}
         """
 }
 
@@ -203,7 +203,7 @@ process markDuplicates {
     script:
         """
         sambamba markdup \
-            --nthreads 8 \
+            --nthreads $task.cpus \
             --tmpdir . \
             --hash-table-size 5000000 \
             --overflow-list-size 5000000 \
@@ -238,6 +238,7 @@ process msiSensor2 {
             -t ${T_bam} \
             -n ${N_bam} \
             -d /usr/TMB/msisensor2/models_b37_HumanG1Kv37/1030c0aa35ca5c263daeae866ad18632 \
+            -b $task.cpus \
             -o msisensor2_${patient}_${T}_${N}.txt 2> msisensor2_out_${patient}_${T}_${N}.log
         """
 }
@@ -285,7 +286,7 @@ process manta {
             --referenceFasta=${reference}  \
             --runDir Manta
 
-        python Manta/runWorkflow.py -m local -j 48
+        python Manta/runWorkflow.py -m local -j $task.cpus
 
         mv Manta/results/variants/candidateSmallIndels.vcf.gz \
             Manta_${patient}_${T}_vs_${N}.candidateSmallIndels.vcf.gz
