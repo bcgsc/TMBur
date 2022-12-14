@@ -164,7 +164,7 @@ process createPassVcfs {
 
     script:
         """
-        java -Xmx2g -jar /usr/TMB/snpEff/SnpSift.jar filter \
+        java -Xmx${task.memory.toGiga()}G -jar /usr/TMB/snpEff/SnpSift.jar filter \
             "(FILTER = 'PASS')" \
             ${vcf_file} \
             > ${patient}_${T}_${N}.PASS.vcf
