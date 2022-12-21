@@ -88,10 +88,6 @@ Include: yum
 
     # Set up Ensembl 75 GRCh37 database (will take a few minutes)
     java -jar /usr/TMB/snpEff/snpEff.jar download GRCh37.75
-    # extract the stats for the annotations - needs about 16Gb od RAM so this won't build on singularityhub where the RAM limit is 3.5Gb.
-    java -jar /usr/TMB/snpEff/snpEff.jar dump -v -bed GRCh37.75 > GRCh37.75.bed
-    # get the size of the CDS
-    grep -E '^[1234567890XY]{1,2}\s' GRCh37.75.bed | grep CDS | ./bedtools.static.binary sort | ./bedtools.static.binary merge | awk '{ print $3-$2 }' | paste -sd+ | bc > CDS_size.txt
 
     # msisensor install - would be nice to scan the reference at setup, but it needs to match the reference supplied at runtime.
     git clone https://github.com/niu-lab/msisensor2.git
