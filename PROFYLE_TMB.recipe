@@ -16,11 +16,12 @@ Include: yum
     yum -y install zlib-devel ncurses-devel ncurses
     yum -y install libgomp
     yum -y install make
-    yum -y install gcc
+    yum -y install gcc gcc-c++ libstdc++-static
     yum -y install bc
     yum -y install git
     yum -y install bzip2-devel
     yum -y install xz-devel
+    yum -y install zlib-devel
 
     # install samtools
     wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
@@ -57,11 +58,16 @@ Include: yum
     # bash strelka-2.9.2.centos6_x86_64/bin/runStrelkaGermlineWorkflowDemo.bash
 
     # install Manta for SV calls, and upstream Strelka calling
-    wget https://github.com/Illumina/manta/releases/download/v1.6.0/manta-1.6.0.centos6_x86_64.tar.bz2
-    tar xvjf manta-1.6.0.centos6_x86_64.tar.bz2
-
-    # run a small tests in Manta
-    # python manta-1.6.0.centos6_x86_64/bin//runMantaWorkflowDemo.py
+    wget https://github.com/Illumina/manta/releases/download/v1.6.0/manta-1.6.0.release_src.tar.bz2
+    tar xvjf manta-1.6.0.release_src.tar.bz2
+    cd manta-1.6.0.release_src
+    mkdir -p build
+    cd build
+    ../configure
+    make -C .
+    make install
+    ls -l
+    cd ..
 
     # bedtools
     wget https://github.com/arq5x/bedtools2/releases/download/v2.29.2/bedtools.static.binary
