@@ -1,5 +1,6 @@
 // shorthand to run SnpSift in the container
-snpSift="java -jar /usr/TMB/snpEff/SnpSift.jar"
+snpEff='/usr/TMB/snpEff/snpEff.jar'
+snpSift='java -jar /usr/TMB/snpEff/SnpSift.jar'
 
 // an ugly way to access the file that is distributed in the container
 process copyReference {
@@ -103,7 +104,7 @@ process countCdsBases {
 
     script:
         """
-        java -jar /usr/TMB/snpEff/snpEff.jar  dump -v -bed $anno > ${anno}.bed
+        java -jar ${snpEff} dump -v -bed $anno > ${anno}.bed
         grep -E '^[1234567890XY]{1,2}\\s' ${anno}.bed | \
             grep CDS | \
             bedtools sort | \
@@ -527,11 +528,11 @@ process annotateSmallVariants {
 
     script:
         """
-        java -Xmx48g -jar /usr/TMB/snpEff/snpEff.jar \
+        java -Xmx48g -jar ${snpEff} \
             GRCh37.75 \
             -s ${patient}_${T}_${N}_somatic.snv.html ${snv_calls} \
             > ${snv_calls.baseName}.snpEff.vcf
-        java -Xmx48g -jar /usr/TMB/snpEff/snpEff.jar \
+        java -Xmx48g -jar ${snpEff} \
             GRCh37.75 \
             -s ${patient}_${T}_${N}_somatic.indel.html ${indel_calls} \
             > ${indel_calls.baseName}.snpEff.vcf
@@ -719,16 +720,16 @@ process createReport {
         echo "Normal: ${N}" >> TMB_counts.txt
 
         # AF work - perhaps should go into its own process
-        java -jar /usr/TMB/snpEff/SnpSift.jar extractFields ${snv_vcf} GEN[1].AF > AF.csv
+        java -jar ${snpSift} extractFields ${snv_vcf} GEN[1].AF > AF.csv
         for i in \$(seq 0 0.1 0.9); do \
             count=`awk -v var=\$i '{if (\$1 > var && \$1 <= var+0.1 ) print \$1}' AF.csv | wc -l`;
             printf "%s-%s %d\\n"  \$i \$(echo \$i + 0.1 | bc) \$count;
         done > passed_SNV_AF_counts.txt
 
-        java -Xmx16g -jar /usr/TMB/snpEff/SnpSift.jar \
+        java -Xmx16g -jar ${snpSift} \
             filter "(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" \
             ${snv_vcf} | grep -E '^[1234567890XY]{1,2}\\s' | \
-            java -jar /usr/TMB/snpEff/SnpSift.jar extractFields - GEN[1].AF \
+            java -jar ${snpSift} extractFields - GEN[1].AF \
             > AF_coding.csv
         for i in \$(seq 0 0.1 0.9); do \
             count=`awk -v var=\$i '{if (\$1 > var && \$1 <= var+0.1 ) print \$1}' AF_coding.csv | wc -l`;
