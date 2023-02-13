@@ -8,10 +8,9 @@
 This short program will run the mutation spectrum plotting routines available from https://github.com/AlexandrovLab/SigProfilerPlotting
 """
 import argparse
-import os
-import sys
 
 from SigProfilerMatrixGenerator import install as genInstall
+
 
 def main():
     # Initiate the parser
@@ -20,11 +19,12 @@ def main():
         "-r", "--reference", help="Must be one of GRCh38,GRCh37,mm10,mm9,etc.", default="GRCh37"
     )
 
-    # get at the arguments
+    # Get at the arguments
     args = parser.parse_args()
 
-    # set up to use GRCh37
-    genInstall.install(args.reference, rsync=False, bash=True)  # should be set up when container is built
+    # Set up to use GRCh37
+    # Should be set up when container is built
+    genInstall.install(args.reference, rsync=False, bash=True)
 
 
 # Required stuff to run a script with funtions in it
