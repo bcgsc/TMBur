@@ -7,35 +7,60 @@ Include: yum
     echo "This container holds the tools and resources required for the PROFYLE TMB work. It should be orchestrated using the associated nextflow scripts."
 
 %post
+    # Create the install directories
     mkdir -p /reference
     mkdir -p /usr/TMB
     cd /usr/TMB
 
+    # Install/update required libraries
     yum -y update
     yum -y install wget unzip tar bzip2 java-1.8.0-openjdk
     yum -y install zlib-devel ncurses-devel ncurses
+    yum -y install libffi-devel 
     yum -y install libgomp
+    yum -y install openssl-devel
     yum -y install make
-    yum -y install gcc
+    yum -y install gcc gcc-c++ libstdc++-static
     yum -y install bc
     yum -y install git
     yum -y install bzip2-devel
     yum -y install xz-devel
+    yum -y install zlib-devel
+    yum -y install hostname
+   
+    # Install Python
+    wget https://www.python.org/ftp/python/3.8.7/Python-3.8.7.tgz
+    tar xzf Python-3.8.7.tgz
+    cd Python-3.8.7
+    ./configure --enable-optimizations
+    make altinstall
+    ln -sfn /usr/local/bin/python3.8 /usr/bin/python3.8
+    ln -sfn /usr/local/bin/pip3.8 /usr/bin/pip3.8
+    ln -s /usr/local/bin/pip3.8 /usr/TMB/pip
+    ln -s /usr/local/bin/python3.8 /usr/TMB/python3
 
-    # install samtools
+    # Install sigProfiler from Alexandrov Lab
+    pip3.8 install SigProfilerPlotting
+    pip3.8 install SigProfilerMatrixGenerator    
+    /usr/TMB/python3 /usr/TMB/install_mutation_spectrum.py
+
+    # Install samtools
+    cd /usr/TMB
     wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
     tar xvjf samtools-1.9.tar.bz2
     cd samtools-1.9
     ./configure --prefix=/usr/local
     make
-    cp samtools ..
-    cd ..
+    cp samtools /usr/TMB/
+    chmod 775 /usr/TMB/samtools
 
-    # install fastp
+    # Install fastp
+    cd /usr/TMB
     wget http://opengene.org/fastp/fastp
     chmod a+x ./fastp
 
-    # install bwa
+    # Install bwa
+    cd /usr/TMB
     wget https://github.com/lh3/bwa/releases/download/v0.7.17/bwa-0.7.17.tar.bz2
     tar -xf bwa-0.7.17.tar.bz2
     cd bwa-0.7.17
@@ -43,32 +68,36 @@ Include: yum
     cp bwa ..
     cd ..
 
-    # install sambamba
+    # Install sambamba
     wget https://github.com/biod/sambamba/releases/download/v0.5.5/sambamba_v0.5.5_linux.tar.bz2
     tar -xf sambamba_v0.5.5_linux.tar.bz2
     ln -s sambamba_v0.5.5 sambamba
     chmod 775 sambamba
 
-    # install strelka2.9.2
+    # Install strelka2.9.2
     wget https://github.com/Illumina/strelka/releases/download/v2.9.2/strelka-2.9.2.centos6_x86_64.tar.bz2
     tar xvjf strelka-2.9.2.centos6_x86_64.tar.bz2
-    # run install tests
+    # Run install tests
     # bash strelka-2.9.2.centos6_x86_64/bin/runStrelkaSomaticWorkflowDemo.bash
     # bash strelka-2.9.2.centos6_x86_64/bin/runStrelkaGermlineWorkflowDemo.bash
 
-    # install Manta for SV calls, and upstream Strelka calling
-    wget https://github.com/Illumina/manta/releases/download/v1.6.0/manta-1.6.0.centos6_x86_64.tar.bz2
-    tar xvjf manta-1.6.0.centos6_x86_64.tar.bz2
+    # Install Manta for SV calls, and upstream Strelka calling
+    wget https://github.com/Illumina/manta/releases/download/v1.6.0/manta-1.6.0.release_src.tar.bz2
+    tar xvjf manta-1.6.0.release_src.tar.bz2
+    cd manta-1.6.0.release_src
+    mkdir -p build
+    cd build
+    ../configure --prefix=/usr/TMB/manta-1.6.0.centos6_x86_64 #matches path for when we used the pre-compiled binary
+    make -C .
+    make install
+    cd /usr/TMB #return to base folder
 
-    # run a small tests in Manta
-    # python manta-1.6.0.centos6_x86_64/bin//runMantaWorkflowDemo.py
-
-    # bedtools
+    # Install bedtools
     wget https://github.com/arq5x/bedtools2/releases/download/v2.29.2/bedtools.static.binary
     chmod 775 bedtools.static.binary
     ln -s bedtools.static.binary bedtools
 
-    # seqtk for counting fasta bases quickly
+    # Install seqtk for counting fasta bases quickly
     wget https://github.com/lh3/seqtk/archive/v1.3.tar.gz
     tar -xvf v1.3.tar.gz
     cd seqtk-1.3/
@@ -76,39 +105,38 @@ Include: yum
     cd /usr/TMB
     ln -s /usr/TMB/seqtk-1.3/seqtk
 
-    # install snpEff
+    # Install SnpEff
     wget https://cfhcable.dl.sourceforge.net/project/snpeff/snpEff_v4_3t_core.zip
     unzip snpEff_v4_3t_core.zip
 
     # Set up Ensembl 75 GRCh37 database (will take a few minutes)
     java -jar /usr/TMB/snpEff/snpEff.jar download GRCh37.75
-    # extract the stats for the annotations - needs about 16Gb od RAM so this won't build on singularityhub where the RAM limit is 3.5Gb.
-    java -jar /usr/TMB/snpEff/snpEff.jar dump -v -bed GRCh37.75 > GRCh37.75.bed
-    # get the size of the CDS
-    grep -E '^[1234567890XY]{1,2}\s' GRCh37.75.bed | grep CDS | ./bedtools.static.binary sort | ./bedtools.static.binary merge | awk '{ print $3-$2 }' | paste -sd+ | bc > CDS_size.txt
 
-    # msisensor install - would be nice to scan the reference at setup, but it needs to match the reference supplied at runtime.
+    # Install msisensor - would be nice to scan the reference at setup, but it needs to match the reference supplied at runtime.
     git clone https://github.com/niu-lab/msisensor2.git
     cd msisensor2
     chmod +x msisensor2
     cd ..
     ln -s msisensor2/msisensor2 msisensor
 
-    # install gatk
+    # Install gatk
     wget https://github.com/broadinstitute/gatk/releases/download/4.0.10.0/gatk-4.0.10.0.zip
     unzip gatk-4.0.10.0.zip
 
-    # install RTGtools
+    # Install RTGtools
     wget https://github.com/RealTimeGenomics/rtg-tools/releases/download/3.11/rtg-tools-3.11-linux-x64.zip
     unzip rtg-tools-3.11-linux-x64.zip
+    # To get around read only error trying to make rtg.cfg on first run through nextflow
+    echo "RTG_TALKBACK=true  # Crash logs\nRTG_USAGE=false # Simple usage logging\n" > rtg-tools-3.11/rtg.cfg
 
 %files
     allele_counts_from_strelka.py /usr/TMB/allele_counts_from_strelka.py
-    # copy in our version of hg19 with the pre-built index. This way no-one can use a different one.
-    # needs to be in a separate folder from the binaries so that the folder doesn't get mounted twice.
+    plot_mutation_spectrum.py /usr/TMB/plot_mutation_spectrum.py
+    install_mutation_spectrum.py /usr/TMB/install_mutation_spectrum.py
+    # Copy in our version of hg19 with the pre-built index. This way no-one can use a different one.
+    # Needs to be in a separate folder from the binaries so that the folder doesn't get mounted twice.
     # This might not be an issue with newer versions of singularity.
     hs37d5.fa /reference/hs37d5.fa
 
 %environment
     export PATH=/usr/TMB:$PATH
-    # export LC_ALL=C
