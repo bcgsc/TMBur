@@ -4,7 +4,6 @@
  */
 process mutect2 {
     tag "${patient}_${T}_${N}_${chromosome}_${start}_${end}"
-    cpus 4 // seems to use about 400% CPU per job
 
     input:
         tuple val(patient),
@@ -165,7 +164,7 @@ process createPassVcfs {
 
     script:
         """
-        java -Xmx2g -jar /usr/TMB/snpEff/SnpSift.jar filter \
+        java -Xmx${task.memory.toGiga()}G -jar /usr/TMB/snpEff/SnpSift.jar filter \
             "(FILTER = 'PASS')" \
             ${vcf_file} \
             > ${patient}_${T}_${N}.PASS.vcf

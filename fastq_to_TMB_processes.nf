@@ -1,5 +1,6 @@
 // shorthand to run SnpSift in the container
-snpSift="java -jar /usr/TMB/snpEff/SnpSift.jar"
+snpEff='/usr/TMB/snpEff/snpEff.jar'
+snpSift='java -jar /usr/TMB/snpEff/SnpSift.jar'
 
 // an ugly way to access the file that is distributed in the container
 process copyReference {
@@ -103,7 +104,7 @@ process countCdsBases {
 
     script:
         """
-        java -jar /usr/TMB/snpEff/snpEff.jar  dump -v -bed $anno > ${anno}.bed
+        java -jar ${snpEff} dump -v -bed $anno > ${anno}.bed
         grep -E '^[1234567890XY]{1,2}\\s' ${anno}.bed | \
             grep CDS | \
             bedtools sort | \
@@ -114,7 +115,6 @@ process countCdsBases {
 
 process trimPair {
     tag "$an_id"
-    cpus 10
 
     input:
         tuple val(an_id), val(patient), val(tissue), path(reads1), path(reads2)
@@ -140,8 +140,6 @@ process trimPair {
 
 process alignReads {
     tag "$an_id"
-    cpus 48
-    memory '48 GB'
 
     input:
         tuple val(an_id), val(patient), val(tissue), path(trim1), path(trim2)
@@ -156,13 +154,12 @@ process alignReads {
         bwa mem \
             ${reference_fasta} \
             -R '@RG\\tID:${an_id}_${patient}_${tissue}\\tSM:${patient}_${tissue}\\tLB:${an_id}_${patient}_${tissue}\\tPL:ILLUMINA' \
-            -t 48 ${trim1} ${trim2}  | /usr/TMB/samtools view -S -b - > ${an_id}.bam
+            -t ${task.cpus} ${trim1} ${trim2}  | /usr/TMB/samtools view -S -b - > ${an_id}.bam
         """
 }
 
 process sortBam {
     tag "$an_id"
-    cpus 10
 
     input:
         tuple val(an_id), val(patient), val(tissue), path(bam_file)
@@ -172,14 +169,12 @@ process sortBam {
 
     script:
         """
-        /usr/TMB/samtools sort -@ 10 -T . -o ${bam_file.baseName}.sorted.bam ${bam_file}
+        /usr/TMB/samtools sort -@ ${task.cpus} -T . -o ${bam_file.baseName}.sorted.bam ${bam_file}
         """
 }
 
 process mergeBams {
     tag "${patient}_${tissue}"
-    memory "64 GB"
-    cpus 16
 
     input:
         tuple val(patient), val(tissue), val(an_id), path(bams_to_merge)
@@ -196,8 +191,6 @@ process mergeBams {
 process markDuplicates {
     tag "${patient}_${tissue}"
     publishDir "${params.out_dir}/bams/${patient}_bams"
-    memory '128 GB'
-    cpus 8
 
     input:
         tuple val(patient), val(tissue), path(bam_file)
@@ -211,7 +204,7 @@ process markDuplicates {
     script:
         """
         sambamba markdup \
-            --nthreads 8 \
+            --nthreads ${task.cpus} \
             --tmpdir . \
             --hash-table-size 5000000 \
             --overflow-list-size 5000000 \
@@ -222,7 +215,6 @@ process markDuplicates {
 process msiSensor2 {
     tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/MSIsensor2"
-    cpus 32
 
     input:
         tuple val(patient),
@@ -247,7 +239,7 @@ process msiSensor2 {
             -t ${T_bam} \
             -n ${N_bam} \
             -d /usr/TMB/msisensor2/models_b37_HumanG1Kv37/1030c0aa35ca5c263daeae866ad18632 \
-            -b 32 \
+            -b ${task.cpus} \
             -o msisensor2_${patient}_${T}_${N}.txt 2> msisensor2_out_${patient}_${T}_${N}.log
         """
 }
@@ -259,7 +251,6 @@ process msiSensor2 {
 process manta {
     tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/Manta"
-    cpus 48
 
     input:
         tuple val(patient),
@@ -296,7 +287,7 @@ process manta {
             --referenceFasta=${reference}  \
             --runDir Manta
 
-        python Manta/runWorkflow.py -m local -j 48
+        python Manta/runWorkflow.py -m local -j ${task.cpus}
 
         mv Manta/results/variants/candidateSmallIndels.vcf.gz \
             Manta_${patient}_${T}_vs_${N}.candidateSmallIndels.vcf.gz
@@ -316,7 +307,6 @@ process manta {
 process strelka {
     tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/strelka"
-    cpus 48
 
     input:
         tuple val(tool),
@@ -355,7 +345,7 @@ process strelka {
             --runDir Strelka \
             --indelCandidates ${SmallIndels}
 
-        python Strelka/runWorkflow.py -m local -j 48
+        python Strelka/runWorkflow.py -m local -j ${task.cpus}
 
         rm -f *gz *tbi
 
@@ -412,8 +402,6 @@ process createPassVcfsStrelka {
 process rtgIntersectCalls {
     tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/variant_intersect", mode: 'copy'
-    cpus 10
-    memory '16 GB'
 
     input:
         tuple val(patient),
@@ -459,7 +447,7 @@ process rtgIntersectCalls {
 
     script:
         """
-        /usr/TMB/rtg-tools-3.11/rtg RTG_MEM=16G vcfeval \
+        /usr/TMB/rtg-tools-3.11/rtg RTG_MEM=${task.memory.toGiga()}G vcfeval \
             -b ${strelka_snvs} \
             -c ${mutect_snvs} \
             -t ${rtg_reference} \
@@ -475,7 +463,7 @@ process rtgIntersectCalls {
         mv SNV_intersect/fn.vcf.gz.tbi ${patient}_${T}_${N}_snv_strelka_only.vcf.gz.tbi
         mv SNV_intersect/tp.vcf.gz.tbi ${patient}_${T}_${N}_snv_both.vcf.gz.tbi
 
-        /usr/TMB/rtg-tools-3.11/rtg RTG_MEM=16G vcfeval \
+        /usr/TMB/rtg-tools-3.11/rtg RTG_MEM=${task.memory.toGiga()}G vcfeval \
             -b ${strelka_indels} \
             -c ${mutect_indels} \
             -t ${rtg_reference} \
@@ -497,7 +485,6 @@ process rtgIntersectCalls {
 process annotateSmallVariants {
     tag "${patient}_${T}_${N}"
     publishDir "${params.out_dir}/${patient}_${T}_${N}/annotated_variants", mode: 'copy'
-    memory '48 GB'
 
     input:
         tuple val(names),
@@ -526,12 +513,13 @@ process annotateSmallVariants {
             path("${patient}_${T}_${N}_somatic.indel.genes.txt"), emit: stats_files
 
     script:
+        java_mem = "${task.memory.toGiga()}G"
         """
-        java -Xmx48g -jar /usr/TMB/snpEff/snpEff.jar \
+        java -Xmx${java_mem} -jar ${snpEff} \
             GRCh37.75 \
             -s ${patient}_${T}_${N}_somatic.snv.html ${snv_calls} \
             > ${snv_calls.baseName}.snpEff.vcf
-        java -Xmx48g -jar /usr/TMB/snpEff/snpEff.jar \
+        java -Xmx${java_mem} -jar ${snpEff} \
             GRCh37.75 \
             -s ${patient}_${T}_${N}_somatic.indel.html ${indel_calls} \
             > ${indel_calls.baseName}.snpEff.vcf
@@ -581,7 +569,6 @@ process createPanelReport {
     publishDir "${params.out_dir}/${patient}_${T}_${N}/report", mode: 'copy', overwrite: true
     // occasionally there are zero variants, creating a div-by-0 error below.
     errorStrategy 'ignore'
-    memory '48 GB'
 
     input:
         path base_count
@@ -719,16 +706,16 @@ process createReport {
         echo "Normal: ${N}" >> TMB_counts.txt
 
         # AF work - perhaps should go into its own process
-        java -jar /usr/TMB/snpEff/SnpSift.jar extractFields ${snv_vcf} GEN[1].AF > AF.csv
+        java -jar ${snpSift} extractFields ${snv_vcf} GEN[1].AF > AF.csv
         for i in \$(seq 0 0.1 0.9); do \
             count=`awk -v var=\$i '{if (\$1 > var && \$1 <= var+0.1 ) print \$1}' AF.csv | wc -l`;
             printf "%s-%s %d\\n"  \$i \$(echo \$i + 0.1 | bc) \$count;
         done > passed_SNV_AF_counts.txt
 
-        java -Xmx16g -jar /usr/TMB/snpEff/SnpSift.jar \
+        java -Xmx${task.memory.toGiga()}G -jar /usr/TMB/snpEff/SnpSift.jar \
             filter "(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" \
             ${snv_vcf} | grep -E '^[1234567890XY]{1,2}\\s' | \
-            java -jar /usr/TMB/snpEff/SnpSift.jar extractFields - GEN[1].AF \
+            java -jar ${snpSift} extractFields - GEN[1].AF \
             > AF_coding.csv
         for i in \$(seq 0 0.1 0.9); do \
             count=`awk -v var=\$i '{if (\$1 > var && \$1 <= var+0.1 ) print \$1}' AF_coding.csv | wc -l`;
