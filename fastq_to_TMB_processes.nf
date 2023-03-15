@@ -1,6 +1,6 @@
 // shorthand to run SnpSift in the container
 snpEff='/usr/TMB/snpEff/snpEff.jar'
-snpSift='java -jar /usr/TMB/snpEff/SnpSift.jar'
+snpSift='/usr/TMB/snpEff/SnpSift.jar'
 
 // an ugly way to access the file that is distributed in the container
 process copyReference {
@@ -387,9 +387,9 @@ process createPassVcfsStrelka {
 
     script:
         """
-        ${snpSift} filter "(FILTER = 'PASS')"  ${strelka_indels} \
+        java -jar ${snpSift} filter "(FILTER = 'PASS')"  ${strelka_indels} \
             > strelka_${patient}_${T}_${N}.PASS.indel.vcf
-        ${snpSift} filter "(FILTER = 'PASS')"  ${strelka_snvs} \
+        java -jar ${snpSift} filter "(FILTER = 'PASS')"  ${strelka_snvs} \
             > strelka_${patient}_${T}_${N}.PASS.snv.vcf
         /usr/TMB/rtg-tools-3.11/rtg bgzip strelka_${patient}_${T}_${N}.PASS.indel.vcf
         /usr/TMB/rtg-tools-3.11/rtg bgzip strelka_${patient}_${T}_${N}.PASS.snv.vcf
@@ -596,10 +596,10 @@ process createPanelReport {
         echo "snv file: ${snv_vcf}" >> TMB_panel_estimates.txt
 
         # Get variants in the panel genes
-        ${snpSift} filter -s /usr/TMB/panel_gene_list_20200218.txt \
+        java -jar ${snpSift} filter -s /usr/TMB/panel_gene_list_20200218.txt \
             "(ANN[*].GENE in SET[0])" \
             ${snv_vcf} > ${snv_vcf.simpleName}_panel.vcf
-        ${snpSift} filter -s /usr/TMB/panel_gene_list_20200218.txt \
+        java -jar ${snpSift} filter -s /usr/TMB/panel_gene_list_20200218.txt \
             "(ANN[*].GENE in SET[0])" \
             ${indel_vcf} > ${indel_vcf.simpleName}_panel.vcf
         panel_SNV_count=`grep -v ^# ${snv_vcf.simpleName}_panel.vcf | wc -l`
@@ -624,21 +624,21 @@ process createPanelReport {
         printf "INDELs in panel+CDS : %3f\\n" \${panel_CDS_INDEL_count} >> TMB_panel_estimates.txt
 
         # Annotate calls with COSMIC
-        ${snpSift} annotate \
+        java -jar ${snpSift} annotate \
             ${cosmic_vcf} \
             ${snv_vcf.simpleName}_panel_CDS.vcf \
             > ${snv_vcf.simpleName}_panel_CDS_cosmic.vcf
-        ${snpSift} annotate \
+        java -jar ${snpSift} annotate \
             ${cosmic_vcf} \
             ${indel_vcf.simpleName}_panel_CDS.vcf \
             > ${indel_vcf.simpleName}_panel_CDS_cosmic.vcf
 
         # Remove COSMIC variants
-        ${snpSift} filter \
+        java -jar ${snpSift} filter \
             "( ID !~ 'COS' )" \
             ${snv_vcf.simpleName}_panel_CDS_cosmic.vcf \
             > ${snv_vcf.simpleName}_panel_CDS_cosmic_filt.vcf
-        ${snpSift} filter \
+        java -jar ${snpSift} filter \
             "( ID !~ 'COS' )" \
             ${indel_vcf.simpleName}_panel_CDS_cosmic.vcf \
             > ${indel_vcf.simpleName}_panel_CDS_cosmic_filt.vcf
@@ -649,10 +649,10 @@ process createPanelReport {
 
         # Take the above (in panel, in CDS, not in COSMIC) and filter for specific TSG variants.
         # Looking for remaining nonsense SNVs in TSGs or protein changing INDELs
-        TSG_nonsense_SNV=`${snpSift} filter -s /usr/TMB/TSG_list.txt \
+        TSG_nonsense_SNV=`java -jar ${snpSift} filter -s /usr/TMB/TSG_list.txt \
             \"(EFF[*].EFFECT has 'stop_gained') && (ANN[*].GENE in SET[0])\" \
             ${snv_vcf.simpleName}_panel_CDS_cosmic_filt.vcf | grep -v ^# | wc -l`
-        TSG_protein_INDEL=`${snpSift} filter -s /usr/TMB/TSG_list.txt  \
+        TSG_protein_INDEL=`java -jar ${snpSift} filter -s /usr/TMB/TSG_list.txt  \
             \"(ANN[*].GENE in SET[0]) && ((EFF[*].IMPACT = 'LOW') | (EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH'))\" \
             ${indel_vcf.simpleName}_panel_CDS_cosmic_filt.vcf | grep -v ^# | wc -l`
         printf "NONSENSE SNVs in panel in TSG list not in COSMIC: %3f\\n" \${TSG_nonsense_SNV} >> TMB_panel_estimates.txt
@@ -712,7 +712,7 @@ process createReport {
             printf "%s-%s %d\\n"  \$i \$(echo \$i + 0.1 | bc) \$count;
         done > passed_SNV_AF_counts.txt
 
-        java -Xmx${task.memory.toGiga()}G -jar /usr/TMB/snpEff/SnpSift.jar \
+        java -Xmx${task.memory.toGiga()}G ${snpSift} \
             filter "(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" \
             ${snv_vcf} | grep -E '^[1234567890XY]{1,2}\\s' | \
             java -jar ${snpSift} extractFields - GEN[1].AF \
@@ -744,12 +744,12 @@ process createReport {
         printf "CDS Indel TMB: %3.2f\\n" `echo "scale=8; \${total_CDS_Indels} * 1000000 / \${total_CDS_bases}" | bc` >> TMB_counts.txt
 
         # CODING/PROTEIN TMB
-        total_protein_SNVs=`${snpSift} filter \
+        total_protein_SNVs=`java -jar ${snpSift} filter \
             "(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" \
             ${snv_vcf} | \
             grep -E '^[1234567890XY]{1,2}\\s' | \
             wc -l`
-        total_protein_Indels=`${snpSift} filter \
+        total_protein_Indels=`java -jar ${snpSift} filter \
             "(EFF[*].IMPACT = 'MODERATE') | (EFF[*].IMPACT = 'HIGH')" \
             ${indel_vcf} | \
             grep -E '^[1234567890XY]{1,2}\\s' | \

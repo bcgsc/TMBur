@@ -1,3 +1,6 @@
+// shorthand to run SnpSift in the container
+snpSift='/usr/TMB/snpEff/SnpSift.jar'
+
 /*
  * This is the main job that runs Mutect2 calling. It is set up to run on a specific region defined
  * by chromosome, start, and end.
@@ -164,7 +167,7 @@ process createPassVcfs {
 
     script:
         """
-        java -Xmx${task.memory.toGiga()}G -jar /usr/TMB/snpEff/SnpSift.jar filter \
+        java -Xmx${task.memory.toGiga()}G -jar ${snpSift} filter \
             "(FILTER = 'PASS')" \
             ${vcf_file} \
             > ${patient}_${T}_${N}.PASS.vcf
