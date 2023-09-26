@@ -133,6 +133,8 @@ Include: yum
     allele_counts_from_strelka.py /usr/TMB/allele_counts_from_strelka.py
     plot_mutation_spectrum.py /usr/TMB/plot_mutation_spectrum.py
     install_mutation_spectrum.py /usr/TMB/install_mutation_spectrum.py
+    panel_gene_list_20200218.txt /usr/TMB/panel_gene_list_20200218.txt
+    TSG_list.txt /usr/TMB/TSG_list.txt
     # Copy in our version of hg19 with the pre-built index. This way no-one can use a different one.
     # Needs to be in a separate folder from the binaries so that the folder doesn't get mounted twice.
     # This might not be an issue with newer versions of singularity.
