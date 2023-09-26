@@ -62,12 +62,12 @@ workflow {
 
     // load in the samples file
     samples = Channel
-        .fromPath(samples_file)
+        .fromPath(params.samples_file)
         .splitCsv(header: true)
         .map{ row -> tuple(file(row.read1).baseName, row.patient, row.tissue, file(row.read1), file(row.read2)) }
     
     // run the pipeline on the samples
-    tmbur(samples_file)
+    tmbur(samples)
 }
 
 // subworkflow that runs that analysis, can be imported by other workflows
